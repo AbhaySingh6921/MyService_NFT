@@ -1,0 +1,33 @@
+.agreementWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.document {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 8px 14px 8px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  gap: 8px;
+  width: fit-content;
+}
+
+.icon {
+  border-radius: 8px;
+  background-color: #0d0d0d;
+  height: 30px;
+  width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.list {
+  list-style-type: disc;
+  list-style-position: inside;
+  font-size: 12px;
+  font-weight: 300;
+}

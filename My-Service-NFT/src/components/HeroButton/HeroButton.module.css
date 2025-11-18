@@ -1,0 +1,56 @@
+.primary-left {
+  position: relative;
+  padding: 15px 20px;
+  background-color: #090d2d;
+  border-radius: 99999px;
+
+  background-image: url("/buttonGradientLeft.png");
+  background-position: bottom left;
+  background-repeat: no-repeat;
+
+  box-shadow: inset 0 -5px 4px rgba(0, 0, 0, 0.21),
+    0 4px 4px rgba(0, 0, 0, 0.25);
+
+  font-size: 16px;
+  font-weight: 400;
+  cursor: pointer;
+
+}
+
+.primary-left::before,
+.primary-right::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.primary-right {
+  position: relative;
+  padding: 15px 20px;
+  background-color: #090d2d;
+  border-radius: 99999px;
+
+  background-image: url("/buttonGradientRight.png");
+  background-position: top right;
+  background-repeat: no-repeat;
+
+  box-shadow: inset 0 -5px 4px rgba(0, 0, 0, 0.21),
+    0 4px 4px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+
+}
+
+.link {
+  color: #15a0fd;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 20px;
+  font-size: 16px;
+  cursor: pointer;
+
+}

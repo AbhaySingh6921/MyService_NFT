@@ -1,0 +1,226 @@
+@import "tailwindcss";
+
+* {
+  /* margin: 0;
+  padding: 0; */
+  box-sizing: border-box;
+  object-fit: cover;
+}
+
+:root {
+  --color-background: #05081f;
+  --color-background-gradient: #2a3e84;
+
+  /* Break Points
+
+  --bp-mdm: 844px;
+  --bp-lg: 1024px; */
+}
+
+body {
+  font-family: "Outfit", sans-serif;
+  background-color: var(--color-background);
+  color: white;
+  padding: 0;
+  margin: 0;
+}
+
+.pageWrapper {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  padding-left: 28px;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  /* background-color: red; */
+
+  overflow: hidden;
+}
+
+.profileAndCountdown {
+  display: none;
+}
+
+h1 {
+  font-size: 33px;
+  width: 263px;
+  line-height: 35px;
+  font-weight: 400;
+}
+
+h1 span {
+  font-weight: 600;
+}
+
+.subHeading {
+  font-size: 11px;
+  font-weight: 200;
+  line-height: 15px;
+  /* letter-spacing: -0.2px; */
+  opacity: 0.65;
+  width: 297px;
+  margin-top: 9px;
+}
+
+.bgGradientBlob {
+  position: absolute;
+  aspect-ratio: 1/1;
+  width: 356px;
+  background-color: var(--color-background-gradient);
+  border-radius: 999999px;
+  z-index: -1;
+
+  filter: blur(175px);
+}
+
+.blob1 {
+  top: -120px;
+  left: -152px;
+}
+
+.blob2 {
+  top: 490px;
+  right: -240px;
+}
+
+.clockImage {
+  aspect-ratio: initial;
+  /* width: 607.51px; */
+  height: 490px;
+  /* background-color: red; */
+  position: absolute;
+  z-index: -100;
+  top: 216px;
+  right: -16px;
+}
+
+.profileAndCountdownMobile {
+  margin-top: 270px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lotteryDetails,
+.serviceProviderProfile {
+  margin-top: 36px;
+}
+
+h2 {
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.serviceGrid {
+  display: grid;
+  grid-template-columns: 337px;
+  grid-template-rows: repeat(4, 196px);
+  gap: 20px;
+}
+
+@media (min-width: 724px) {
+  .profileAndCountdown {
+    display: flex;
+  }
+
+  h1 {
+    font-size: 36px;
+    width: 389px;
+    line-height: 36px;
+    margin-top: 40px;
+  }
+
+  .subHeading {
+    font-size: 13px;
+    width: 476px;
+    margin-top: 15px;
+    line-height: 19px;
+  }
+
+  .clockImage {
+    top: 38px;
+    right: -92px;
+  }
+
+  .profileAndCountdownMobile {
+    display: none;
+  }
+
+  .serviceGrid {
+    grid-template-columns: repeat(2, 337px);
+    grid-template-rows: repeat(2, 196px);
+  }
+}
+
+@media (min-width: 844px) {
+  h1 {
+    font-size: 42px;
+    width: 460px;
+    line-height: 42px;
+  }
+
+  .subHeading {
+    font-size: 12px;
+    width: 424px;
+    margin-top: 11px;
+  }
+}
+
+@media (min-width: 1024px) {
+  h1 {
+    font-size: 50px;
+    width: 537px;
+    line-height: 49px;
+  }
+
+  .clockImage {
+    height: 563px;
+    top: 47px;
+    right: -77px;
+  }
+
+  .serviceGrid {
+    grid-template-columns: repeat(2, 405px);
+    grid-template-rows: 231px;
+    row-gap: 45px;
+    column-gap: 95px;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1445px) {
+  .serviceGrid {
+    grid-template-columns: repeat(3, 337px);
+    grid-template-rows: 196px;
+    column-gap: 85px;
+  }
+}
+
+@media (min-width: 1446px) {
+  .serviceGrid {
+    grid-template-columns: repeat(3, 405px);
+    grid-template-rows: 231px;
+    column-gap: 70px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .clockImage {
+    height: 768px;
+    top: -37px;
+    right: -104px;
+  }
+}
+
+@media (min-width: 1512px) {
+  h1 {
+    font-size: 59px;
+    width: 646px;
+    line-height: 59px;
+  }
+
+  .clockImage {
+    height: 820px;
+    top: -67px;
+    right: -135px;
+  }
+}

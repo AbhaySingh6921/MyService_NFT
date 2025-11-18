@@ -1,0 +1,147 @@
+.card {
+  width: 337px;
+  height: 196px;
+  position: relative;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  position: absolute;
+  z-index: -1;
+}
+
+.bottomRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.textBox {
+  display: flex;
+  flex-direction: column;
+  margin-left: 16px;
+  margin-bottom: 13px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 500;
+  color: white;
+}
+
+.subtitle {
+  font-size: 13px;
+  opacity: 0.8;
+  color: white;
+  margin-top: -3px;
+}
+
+.copyBtn {
+  width: 32px;
+  height: 32px;
+  background: #0d0d0d;
+  border: none;
+  outline: none;
+  border-radius: 8px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin: 0 12px 12px 0;
+}
+
+.bgCardGradientBlob {
+  border-radius: 999999px;
+  width: 246px;
+  height: 246px;
+  background-color: #2e2267;
+  position: absolute;
+  top: -172px;
+  left: -117px;
+  filter: blur(50px);
+}
+
+.purpleBlob {
+  background-color: #2e2267;
+  top: -172px;
+  left: -117px;
+  z-index: -999;
+}
+
+.blueBlob {
+  background-color: rgba(75, 144, 255, 0.42);
+  top: 135px;
+  left: 178px;
+  z-index: -999;
+}
+
+@media (min-width: 1024px) {
+  .card {
+    width: 405px;
+    height: 231px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 15px;
+  }
+
+  .copyBtn {
+    width: 36px;
+    height: 36px;
+    margin: 0 15px 15px 0;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1445px) {
+  .card {
+    width: 337px;
+    height: 196px;
+  }
+
+  .title {
+    font-size: 16px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .copyBtn {
+    width: 32px;
+    height: 32px;
+    margin: 0 12px 12px 0;
+  }
+}
+
+@media (min-width: 1512px) {
+  .card {
+    width: 405px;
+    height: 231px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 15px;
+  }
+
+  .copyBtn {
+    width: 36px;
+    height: 36px;
+    margin: 0 15px 15px 0;
+  }
+}

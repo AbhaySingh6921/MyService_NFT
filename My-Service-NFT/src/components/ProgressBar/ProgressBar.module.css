@@ -1,0 +1,56 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.count {
+  font-size: 24px;
+  font-weight: 600;
+  color: white;
+}
+
+.barBackground {
+  width: 321px;
+  height: 18px;
+  background: #2c2c2c;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  background: #159e00;
+  background: linear-gradient(
+    90deg,
+    rgba(21, 158, 0, 1) 0%,
+    rgba(91, 193, 75, 1) 100%
+  );
+  border-radius: inherit;
+  transition: width 0.4s ease;
+}
+
+.remaining {
+  font-size: 14px;
+  opacity: 0.85;
+  color: white;
+  font-weight: 300;
+}
+
+@media (min-width: 1024px) {
+  .count {
+    font-size: 32px;
+  }
+
+  .barBackground {
+    border-radius: 7px;
+    height: 22px;
+    width: 509px;
+  }
+
+  .remaining {
+    font-size: 16px;
+  }
+}
