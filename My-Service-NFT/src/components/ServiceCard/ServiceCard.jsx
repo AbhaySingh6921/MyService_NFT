@@ -5,7 +5,7 @@ import { IoDocumentTextOutline } from "react-icons/io5";
 const ServiceCard = ({ id, title, subtitle, image, onServiceClick }) => {
   const fetchServiceData = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/service/${id}`);
+      const res = await fetch(`https://myservice-nft-1.onrender.com/service/${id}`);
       const data = await res.json();
 
       onServiceClick(data);   // 🔥 send data to App.jsx

@@ -12,7 +12,7 @@ const TicketsPopup = ({ onClose }) => {
     const load = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:5000/tickets/${address}`
+          `https://myservice-nft-1.onrender.com/tickets/${address}`
         );
         if (res.data.success) {
           setTickets(res.data.tickets);

@@ -10,7 +10,7 @@ const ParticipantsPopup = ({ onClose }) => {
   useEffect(() => {
     const loadParticipants = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/participants");
+        const res = await axios.get("https://myservice-nft-1.onrender.com/participants");
 
         if (res.data.success) {
           setParticipants(res.data.participants);

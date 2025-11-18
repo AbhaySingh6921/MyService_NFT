@@ -63,7 +63,7 @@ const remainingTickets = maxTickets - totalSold;
 
       // 2️⃣ Backend save
       const backendResponse = await axios.post(
-      "http://localhost:5000/buyticket",
+      "https://myservice-nft-1.onrender.com/buyticket",
      {
     name,
     email,
