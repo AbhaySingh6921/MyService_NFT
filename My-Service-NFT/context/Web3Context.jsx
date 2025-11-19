@@ -4,12 +4,12 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 import Toast from '../src/components/Toast.jsx';
 import { lotteryAddress, nftAddress, lotteryAbi, nftAbi } from '../lib/ContractConfig.jsx';
-import EthereumProvider from "@walletconnect/ethereum-provider"; // REQUIRED
+import EthereumProvider from "@walletconnect/ethereum-provider";
+
+// 🔥 GLOBAL instance to prevent WalletConnect redirect loop
+let wcProviderInstance = null;
 
 const Web3Context = createContext();
-
-// 🔥 GLOBAL WalletConnect instance to stop redirect loop
-let wcProviderInstance = null;
 
 export const Web3Provider = ({ children }) => {
 
@@ -22,7 +22,7 @@ export const Web3Provider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const notify = (msg) => setNotifications((prev) => [...prev, msg]);
 
-  // Detect mobile devices
+  // Detect Mobile
   const isMobile = () => {
     if (typeof window === "undefined") return false;
     return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -35,11 +35,13 @@ export const Web3Provider = ({ children }) => {
   });
 
   // ---------------------------------------------------------
-  // 🚀 CONNECT WALLET (Injected + WalletConnect Hybrid)
+  // 🚀 CONNECT WALLET (Desktop Injected + Mobile WalletConnect)
   // ---------------------------------------------------------
   const connectWallet = async () => {
     try {
-      // 1️⃣ Injected Provider (Desktop OR MetaMask App Browser)
+      // -------------------------------
+      // 1️⃣ INJECTED PROVIDER (Desktop / MetaMask App Browser)
+      // -------------------------------
       if (typeof window !== "undefined" && window.ethereum) {
         const prov = new ethers.BrowserProvider(window.ethereum);
         await prov.send("eth_requestAccounts", []);
@@ -58,11 +60,13 @@ export const Web3Provider = ({ children }) => {
         return userAddress;
       }
 
-      // 2️⃣ WalletConnect (Mobile Chrome/Safari/Edge)
+      // -------------------------------
+      // 2️⃣ WALLETCONNECT (Mobile Chrome/Safari/Edge)
+      // -------------------------------
       if (isMobile()) {
-        console.log("📱 Mobile detected → Using WalletConnect");
+        console.log("📱 Mobile Chrome detected → Using WalletConnect");
 
-        // 🔥 FIX: If WalletConnect session already exists, DO NOT reconnect
+        // ✔ Reuse existing session (PREVENTS redirect loop)
         if (wcProviderInstance && wcProviderInstance.session) {
           console.log("♻ Reusing existing WalletConnect session");
 
@@ -81,10 +85,10 @@ export const Web3Provider = ({ children }) => {
           return userAddress;
         }
 
-        // 🔥 NEW WalletConnect session
+        // 🔥 New WalletConnect session
         wcProviderInstance = await EthereumProvider.init({
           projectId: "ae26db119d30c4bf1eb3ee6fdfb5aa86",
-          chains: [11155111], // Sepolia
+          chains: [11155111],  // Sepolia
           showQrModal: true,
         });
 
@@ -106,6 +110,7 @@ export const Web3Provider = ({ children }) => {
       }
 
       alert("No wallet detected. Install MetaMask.");
+      return null;
 
     } catch (err) {
       console.error("❌ Wallet connect failed:", err);
@@ -114,19 +119,21 @@ export const Web3Provider = ({ children }) => {
   };
 
   // ---------------------------------------------------------
-  // 🚫 DISABLE AUTO-CONNECT ON MOBILE (prevents redirect loop)
+  // 🚫 AUTO-CONNECT (DESKTOP ONLY)
+  // Prevents WalletConnect redirect loop on mobile
   // ---------------------------------------------------------
   useEffect(() => {
-    if (isMobile()) return; // ❗ important, prevents WalletConnect loop
+    if (isMobile()) return;  // ❗ Important fix for mobile
 
     if (window.ethereum) {
-      window.ethereum.request({ method: "eth_accounts" }).then(async (accounts) => {
+      window.ethereum.request({ method: 'eth_accounts' }).then(async (accounts) => {
         if (accounts.length > 0) {
           const prov = new ethers.BrowserProvider(window.ethereum);
           const signer = await prov.getSigner();
           const userAddress = await signer.getAddress();
           const lottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
           const nft = new ethers.Contract(nftAddress, nftAbi, signer);
+
           setProvider(prov);
           setSigner(signer);
           setAddress(userAddress);
@@ -136,15 +143,9 @@ export const Web3Provider = ({ children }) => {
     }
   }, []);
 
-  // Handle account or network change
-  useEffect(() => {
-    if (window.ethereum) {
-      window.ethereum.on("accountsChanged", () => window.location.reload());
-      window.ethereum.on("chainChanged", () => window.location.reload());
-    }
-  }, []);
-
-  // ----------------- EVENTS -----------------
+  // ---------------------------------------------------------
+  // EVENTS
+  // ---------------------------------------------------------
   useEffect(() => {
     if (!contracts?.lottery) return;
     const lottery = contracts.lottery;
@@ -179,7 +180,9 @@ export const Web3Provider = ({ children }) => {
     };
   }, [contracts]);
 
-  // ----------------- ACTIONS -----------------
+  // ---------------------------------------------------------
+  // ACTIONS
+  // ---------------------------------------------------------
   const buyTicket = async (amount = 1) => {
     try {
       if (!contracts.lottery) throw new Error("Connect wallet first");
@@ -234,10 +237,12 @@ export const Web3Provider = ({ children }) => {
 
   const getUserDetails = async () => {
     try {
-      if (!provider) throw new Error("No provider");
+      if (!provider) throw new Error("No provider available");
+
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
       const balanceWei = await provider.getBalance(userAddress);
+
       return {
         address: userAddress,
         balance: ethers.formatEther(balanceWei),

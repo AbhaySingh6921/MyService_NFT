@@ -31,6 +31,12 @@ const App = () => {
     const [servicePopupData, setServicePopupData] = useState(null);
     const navigate = useNavigate();
 
+    const dummyLotteryData = {
+  maxTickets: 1000,
+  totalSold: 450,
+};
+
+
 
     //for loterry data fetch 
     useEffect(() => {
@@ -80,14 +86,11 @@ const handleServiceClick = (data) => {
            portfolioLink="https://your-portfolio-link.com"
         ></ProfileCard>
         {/* ----Remaining Tickets Instead of Countdown---- */}
-        {lotteryData ? (
-           <RemainingTickets
-           maxTickets={lotteryData.maxTickets}
-           totalSold={lotteryData.totalSold}
-        />
-        ) : (
-         <p className="text-white/50">Loading...</p>
-        )}
+        <RemainingTickets
+  maxTickets={address ? lotteryData?.maxTickets : dummyLotteryData.maxTickets}
+  totalSold={address ? lotteryData?.totalSold : dummyLotteryData.totalSold}
+/>
+
         </div>
 
       {/* ----Heading---- */}
@@ -194,14 +197,10 @@ const handleServiceClick = (data) => {
           userName={"Emerson Philips"}
           units={3.2}
         ></ProfileCard>
-        {lotteryData ? (
-  <RemainingTickets
-    maxTickets={lotteryData.maxTickets}
-    totalSold={lotteryData.totalSold}
-  />
-) : (
-  <p className="text-white/50">Loading...</p>
-)}
+        <RemainingTickets
+  maxTickets={address ? lotteryData?.maxTickets : dummyLotteryData.maxTickets}
+  totalSold={address ? lotteryData?.totalSold : dummyLotteryData.totalSold}
+/>
 
       </div>
 
@@ -209,14 +208,11 @@ const handleServiceClick = (data) => {
       <section className="lotteryDetails">
         <h2 className="mb-[12px]">Lottery Details</h2>
 
-        {lotteryData ? (
         <ProgressBar
-           current={lotteryData.totalSold}
-           total={lotteryData.maxTickets}
-        />
-        ) : (
-           <p className="text-white/50">Loading...</p>
-       )}
+  current={address ? lotteryData?.totalSold : dummyLotteryData.totalSold}
+  total={address ? lotteryData?.maxTickets : dummyLotteryData.maxTickets}
+/>
+
        </section>
 
 
