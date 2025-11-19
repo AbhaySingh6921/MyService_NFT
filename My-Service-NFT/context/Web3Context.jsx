@@ -4,116 +4,125 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 import Toast from '../src/components/Toast.jsx';
 import { lotteryAddress, nftAddress, lotteryAbi, nftAbi } from '../lib/ContractConfig.jsx';
-import EthereumProvider from "@walletconnect/ethereum-provider";
-
+import EthereumProvider from "@walletconnect/ethereum-provider"; // REQUIRED
 
 const Web3Context = createContext();
 
+// 🔥 GLOBAL WalletConnect instance to stop redirect loop
+let wcProviderInstance = null;
+
 export const Web3Provider = ({ children }) => {
+
   // --- CORE WEB3 STATE ---
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
   const [address, setAddress] = useState(null);
-  //notifications-----events----
+
+  // Notifications
   const [notifications, setNotifications] = useState([]);
-  const notify = (msg) => {
-  setNotifications((prev) => [...prev, msg]);
-};
+  const notify = (msg) => setNotifications((prev) => [...prev, msg]);
 
-const isMobile = () => {
-  if (typeof window === "undefined") return false;
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-};
+  // Detect mobile devices
+  const isMobile = () => {
+    if (typeof window === "undefined") return false;
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  };
 
-
-  // --- CONTRACT INSTANCES ---
+  // Contracts
   const [contracts, setContracts] = useState({
     lottery: null,
     nft: null,
   });
 
-  // --- CONNECT WALLET ---
-// --- HELPER: Detect Mobile Browser ---
+  // ---------------------------------------------------------
+  // 🚀 CONNECT WALLET (Injected + WalletConnect Hybrid)
+  // ---------------------------------------------------------
+  const connectWallet = async () => {
+    try {
+      // 1️⃣ Injected Provider (Desktop OR MetaMask App Browser)
+      if (typeof window !== "undefined" && window.ethereum) {
+        const prov = new ethers.BrowserProvider(window.ethereum);
+        await prov.send("eth_requestAccounts", []);
 
+        const signer = await prov.getSigner();
+        const userAddress = await signer.getAddress();
 
-// --- CONNECT WALLET (Hybrid Injected + WalletConnect) ---
-const connectWallet = async () => {
-  try {
-    // -------------------------------
-    // 1️⃣ INJECTED PROVIDER (MetaMask)
-    // Works on:
-    // - Desktop Chrome + MetaMask Extension
-    // - MetaMask Mobile App Browser
-    // -------------------------------
-    if (typeof window !== "undefined" && window.ethereum) {
-      const prov = new ethers.BrowserProvider(window.ethereum);
-      await prov.send("eth_requestAccounts", []);
+        const lottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
+        const nft = new ethers.Contract(nftAddress, nftAbi, signer);
 
-      const signer = await prov.getSigner();
-      const userAddress = await signer.getAddress();
+        setProvider(prov);
+        setSigner(signer);
+        setAddress(userAddress);
+        setContracts({ lottery, nft });
 
-      const lottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
-      const nft = new ethers.Contract(nftAddress, nftAbi, signer);
+        return userAddress;
+      }
 
-      setProvider(prov);
-      setSigner(signer);
-      setAddress(userAddress);
-      setContracts({ lottery, nft });
+      // 2️⃣ WalletConnect (Mobile Chrome/Safari/Edge)
+      if (isMobile()) {
+        console.log("📱 Mobile detected → Using WalletConnect");
 
-      return userAddress;
+        // 🔥 FIX: If WalletConnect session already exists, DO NOT reconnect
+        if (wcProviderInstance && wcProviderInstance.session) {
+          console.log("♻ Reusing existing WalletConnect session");
+
+          const prov = new ethers.BrowserProvider(wcProviderInstance);
+          const signer = await prov.getSigner();
+          const userAddress = await signer.getAddress();
+
+          const lottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
+          const nft = new ethers.Contract(nftAddress, nftAbi, signer);
+
+          setProvider(prov);
+          setSigner(signer);
+          setAddress(userAddress);
+          setContracts({ lottery, nft });
+
+          return userAddress;
+        }
+
+        // 🔥 NEW WalletConnect session
+        wcProviderInstance = await EthereumProvider.init({
+          projectId: "ae26db119d30c4bf1eb3ee6fdfb5aa86",
+          chains: [11155111], // Sepolia
+          showQrModal: true,
+        });
+
+        await wcProviderInstance.connect();
+
+        const prov = new ethers.BrowserProvider(wcProviderInstance);
+        const signer = await prov.getSigner();
+        const userAddress = await signer.getAddress();
+
+        const lottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
+        const nft = new ethers.Contract(nftAddress, nftAbi, signer);
+
+        setProvider(prov);
+        setSigner(signer);
+        setAddress(userAddress);
+        setContracts({ lottery, nft });
+
+        return userAddress;
+      }
+
+      alert("No wallet detected. Install MetaMask.");
+
+    } catch (err) {
+      console.error("❌ Wallet connect failed:", err);
+      return null;
     }
+  };
 
-    // -------------------------------
-    // 2️⃣ WALLETCONNECT (Mobile Chrome/Safari/Edge)
-    // Opens MetaMask Mobile App Automatically
-    // -------------------------------
-    if (isMobile()) {
-      console.log("📱 Mobile detected → Using WalletConnect");
-
-      const wcProvider = await EthereumProvider.init({
-        projectId: "ae26db119d30c4bf1eb3ee6fdfb5aa86",
-        chains: [1, 11155111], // Ethereum + Sepolia
-        showQrModal: true,
-      });
-
-      await wcProvider.connect();
-
-      const prov = new ethers.BrowserProvider(wcProvider);
-      const signer = await prov.getSigner();
-      const userAddress = await signer.getAddress();
-
-      const lottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
-      const nft = new ethers.Contract(nftAddress, nftAbi, signer);
-
-      setProvider(prov);
-      setSigner(signer);
-      setAddress(userAddress);
-      setContracts({ lottery, nft });
-
-      return userAddress;
-    }
-
-    // -------------------------------
-    // 3️⃣ If nothing works (rare case)
-    // -------------------------------
-    alert("No wallet detected. Please install MetaMask.");
-    return null;
-
-  } catch (err) {
-    console.error("❌ Wallet connection failed:", err);
-    return null;
-  }
-};
-
-
-
-  // --- AUTO-CONNECT (if already authorized) ---
+  // ---------------------------------------------------------
+  // 🚫 DISABLE AUTO-CONNECT ON MOBILE (prevents redirect loop)
+  // ---------------------------------------------------------
   useEffect(() => {
+    if (isMobile()) return; // ❗ important, prevents WalletConnect loop
+
     if (window.ethereum) {
-      window.ethereum.request({ method: 'eth_accounts' }).then(async (accounts) => {
+      window.ethereum.request({ method: "eth_accounts" }).then(async (accounts) => {
         if (accounts.length > 0) {
-          const prov = new ethers.BrowserProvider(window.ethereum);          
-          
+          const prov = new ethers.BrowserProvider(window.ethereum);
           const signer = await prov.getSigner();
           const userAddress = await signer.getAddress();
           const lottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
@@ -127,148 +136,117 @@ const connectWallet = async () => {
     }
   }, []);
 
-  // --- HANDLE ACCOUNT OR NETWORK CHANGE ---
+  // Handle account or network change
   useEffect(() => {
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', () => window.location.reload());
-      window.ethereum.on('chainChanged', () => window.location.reload());
+      window.ethereum.on("accountsChanged", () => window.location.reload());
+      window.ethereum.on("chainChanged", () => window.location.reload());
     }
   }, []);
 
-  //event listeners 
+  // ----------------- EVENTS -----------------
   useEffect(() => {
-  if (!contracts?.lottery) return;
+    if (!contracts?.lottery) return;
+    const lottery = contracts.lottery;
 
-  const lottery = contracts.lottery;
+    const winnerHandler = (roundId, winner) =>
+      notify(`🏆 Winner: ${winner.slice(0, 6)}... Round: ${roundId}`);
 
-  // WinnerDrawn(roundId, winner, tokenId)
-  const winnerHandler = (roundId, winner, tokenId) => {
-    notify(`🏆 Winner Selected: ${winner.slice(0, 6)}... Round: ${roundId}`);
-  };
+    const newRoundHandler = (newRoundId) =>
+      notify(`🎉 New Round Started! Round ${newRoundId}`);
 
-  // NewRoundStarted(newRoundId)
-  const newRoundHandler = (newRoundId) => {
-    notify(`🎉 New Round Started! Round ${newRoundId}`);
-  };
+    const priceHandler = (newPrice) =>
+      notify(`💲 Ticket Price: ${Number(ethers.formatUnits(newPrice, 6))} USDC`);
 
-  // TicketPriceChanged(newPrice)
-  const priceHandler = (newPrice) => {
-    notify(`💲 Ticket Price Updated: ${Number(ethers.formatUnits(newPrice, 6))} USDC`);
-  };
+    const maxHandler = (newMax) =>
+      notify(`📦 Max Tickets: ${newMax}`);
 
-  // MaxTicketsChanged(newMax)
-  const maxHandler = (newMax) => {
-    notify(`📦 Max Tickets Changed: ${newMax}`);
-  };
+    const limitHandler = (newLimit) =>
+      notify(`👤 User Ticket Limit: ${newLimit}`);
 
-  // MaxTicketsPerUserChanged(newLimit)
-  const limitHandler = (newLimit) => {
-    notify(`👤 Max Tickets Per User Updated: ${newLimit}`);
-  };
+    lottery.on("WinnerDrawn", winnerHandler);
+    lottery.on("NewRoundStarted", newRoundHandler);
+    lottery.on("TicketPriceChanged", priceHandler);
+    lottery.on("MaxTicketsChanged", maxHandler);
+    lottery.on("MaxTicketsPerUserChanged", limitHandler);
 
-  // Register listeners
-  lottery.on("WinnerDrawn", winnerHandler);
-  lottery.on("NewRoundStarted", newRoundHandler);
-  lottery.on("TicketPriceChanged", priceHandler);
-  lottery.on("MaxTicketsChanged", maxHandler);
-  lottery.on("MaxTicketsPerUserChanged", limitHandler);
+    return () => {
+      lottery.off("WinnerDrawn", winnerHandler);
+      lottery.off("NewRoundStarted", newRoundHandler);
+      lottery.off("TicketPriceChanged", priceHandler);
+      lottery.off("MaxTicketsChanged", maxHandler);
+      lottery.off("MaxTicketsPerUserChanged", limitHandler);
+    };
+  }, [contracts]);
 
-  return () => {
-    lottery.off("WinnerDrawn", winnerHandler);
-    lottery.off("NewRoundStarted", newRoundHandler);
-    lottery.off("TicketPriceChanged", priceHandler);
-    lottery.off("MaxTicketsChanged", maxHandler);
-    lottery.off("MaxTicketsPerUserChanged", limitHandler);
-  };
-}, [contracts]);
-
-
-  // --- BUY TICKET ---
+  // ----------------- ACTIONS -----------------
   const buyTicket = async (amount = 1) => {
     try {
-      if (!contracts.lottery) throw new Error('Contract not ready. Connect wallet first.');
+      if (!contracts.lottery) throw new Error("Connect wallet first");
 
       const tx = await contracts.lottery.buyTickets(amount);
       await tx.wait();
       return { success: true, message: `✅ Bought ${amount} ticket(s)!` };
     } catch (err) {
-      console.error('Buy Ticket Error:', err);
-      return { success: false, message: '❌ Transaction failed' };
+      console.error("Buy Ticket Error:", err);
+      return { success: false, message: "❌ Transaction failed" };
     }
   };
 
-  // --- GET LOTTERY INFO (status, total sold, price) ---
   const getLotteryInfo = async () => {
-  if (!contracts.lottery) return null;
-  try {
-    const [statusNum, totalSold, ticketPrice, maxTickets] = await Promise.all([
-      contracts.lottery.getLotteryStatus(),
-      contracts.lottery.getTotalTicketsSold(),
-      contracts.lottery.ticketPrice(),
-      contracts.lottery.maxTickets(), // <-- ADD THIS (your contract must have this)
-    ]);
-
-    const statusMap = {
-      0: '🎟️ OPEN',
-      1: '🔄 CALCULATING WINNER',
-      2: '🏁 CLOSED',
-    };
-
-    return {
-      status: statusMap[statusNum] || 'Unknown',
-      totalSold: Number(totalSold),
-      maxTickets: Number(maxTickets),
-      ticketPrice: ethers.formatUnits(ticketPrice, 6) + " USDC",
-    };
-  } catch (err) {
-    console.error("Error fetching lottery info:", err);
-    return null;
-  }
-};
-
-
-  // --- GET MSA AGREEMENT LINK ---
-  const getMsaAgreement = async () => {
     if (!contracts.lottery) return null;
     try {
-      const msaUri = await contracts.lottery.getMsaURI();
-      return msaUri;
+      const [statusNum, totalSold, ticketPrice, maxTickets] =
+        await Promise.all([
+          contracts.lottery.getLotteryStatus(),
+          contracts.lottery.getTotalTicketsSold(),
+          contracts.lottery.ticketPrice(),
+          contracts.lottery.maxTickets(),
+        ]);
+
+      const statusMap = {
+        0: "🎟️ OPEN",
+        1: "🔄 CALCULATING WINNER",
+        2: "🏁 CLOSED",
+      };
+
+      return {
+        status: statusMap[statusNum] || "Unknown",
+        totalSold: Number(totalSold),
+        maxTickets: Number(maxTickets),
+        ticketPrice: ethers.formatUnits(ticketPrice, 6) + " USDC",
+      };
     } catch (err) {
-      console.error('Error fetching MSA:', err);
+      console.error("Error fetching info:", err);
       return null;
     }
   };
-  // ✅ Fetch connected wallet address and balance
-// ✅ Fetch connected wallet address and balance (always works)
-const getUserDetails = async () => {
-  try {
-    if (!window.ethereum) throw new Error("MetaMask not found");
 
-    // Prefer using existing provider if available
-    let activeProvider = provider;
-    if (!activeProvider) {
-      activeProvider = new ethers.BrowserProvider(window.ethereum);
+  const getMsaAgreement = async () => {
+    if (!contracts.lottery) return null;
+    try {
+      return await contracts.lottery.getMsaURI();
+    } catch (err) {
+      console.error("Error fetching MSA:", err);
+      return null;
     }
+  };
 
-    const signer = await activeProvider.getSigner();
-    const userAddress = await signer.getAddress();
-
-    // --- Get balance in ETH ---
-    const balanceWei = await activeProvider.getBalance(userAddress);
-    const balanceEth = parseFloat(ethers.utils.formatEther(balanceWei)).toFixed(4);
-
-    return {
-      address: userAddress,
-      balance: balanceEth,
-    };
-  } catch (error) {
-    console.error("❌ Error fetching user details:", error);
-    return null;
-  }
-};
-
-
-
+  const getUserDetails = async () => {
+    try {
+      if (!provider) throw new Error("No provider");
+      const signer = await provider.getSigner();
+      const userAddress = await signer.getAddress();
+      const balanceWei = await provider.getBalance(userAddress);
+      return {
+        address: userAddress,
+        balance: ethers.formatEther(balanceWei),
+      };
+    } catch (err) {
+      console.error("❌ User detail error:", err);
+      return null;
+    }
+  };
 
   return (
     <Web3Context.Provider
@@ -281,21 +259,22 @@ const getUserDetails = async () => {
         buyTicket,
         getLotteryInfo,
         getMsaAgreement,
-         getUserDetails,
+        getUserDetails,
         notifications,
-         notify, 
+        notify,
       }}
     >
       {children}
+
       {notifications.map((msg, index) => (
-    <Toast
-      key={index}
-      message={msg}
-      onClose={() =>
-        setNotifications((prev) => prev.filter((_, i) => i !== index))
-      }
-    />
-  ))}
+        <Toast
+          key={index}
+          message={msg}
+          onClose={() =>
+            setNotifications((prev) => prev.filter((_, i) => i !== index))
+          }
+        />
+      ))}
     </Web3Context.Provider>
   );
 };
