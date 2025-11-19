@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 import Toast from '../src/components/Toast.jsx';
 import { lotteryAddress, nftAddress, lotteryAbi, nftAbi } from '../lib/ContractConfig.jsx';
+import EthereumProvider from "@walletconnect/ethereum-provider";
+
 
 const Web3Context = createContext();
 
@@ -18,6 +20,11 @@ export const Web3Provider = ({ children }) => {
   setNotifications((prev) => [...prev, msg]);
 };
 
+const isMobile = () => {
+  if (typeof window === "undefined") return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+};
+
 
   // --- CONTRACT INSTANCES ---
   const [contracts, setContracts] = useState({
@@ -26,32 +33,78 @@ export const Web3Provider = ({ children }) => {
   });
 
   // --- CONNECT WALLET ---
-  const connectWallet = async () => {
+// --- HELPER: Detect Mobile Browser ---
+
+
+// --- CONNECT WALLET (Hybrid Injected + WalletConnect) ---
+const connectWallet = async () => {
   try {
-    if (!window.ethereum) {
-      alert('🦊 Please install MetaMask!');
-      return;
+    // -------------------------------
+    // 1️⃣ INJECTED PROVIDER (MetaMask)
+    // Works on:
+    // - Desktop Chrome + MetaMask Extension
+    // - MetaMask Mobile App Browser
+    // -------------------------------
+    if (typeof window !== "undefined" && window.ethereum) {
+      const prov = new ethers.BrowserProvider(window.ethereum);
+      await prov.send("eth_requestAccounts", []);
+
+      const signer = await prov.getSigner();
+      const userAddress = await signer.getAddress();
+
+      const lottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
+      const nft = new ethers.Contract(nftAddress, nftAbi, signer);
+
+      setProvider(prov);
+      setSigner(signer);
+      setAddress(userAddress);
+      setContracts({ lottery, nft });
+
+      return userAddress;
     }
 
-    const prov = new ethers.BrowserProvider(window.ethereum); // FIXED
-    await prov.send('eth_requestAccounts', []);
+    // -------------------------------
+    // 2️⃣ WALLETCONNECT (Mobile Chrome/Safari/Edge)
+    // Opens MetaMask Mobile App Automatically
+    // -------------------------------
+    if (isMobile()) {
+      console.log("📱 Mobile detected → Using WalletConnect");
 
-    const signer = await prov.getSigner();
-    const userAddress = await signer.getAddress();
+      const wcProvider = await EthereumProvider.init({
+        projectId: "ae26db119d30c4bf1eb3ee6fdfb5aa86",
+        chains: [1, 11155111], // Ethereum + Sepolia
+        showQrModal: true,
+      });
 
-    const lottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
-    const nft = new ethers.Contract(nftAddress, nftAbi, signer);
+      await wcProvider.connect();
 
-    setProvider(prov);
-    setSigner(signer);
-    setAddress(userAddress);
-    setContracts({ lottery, nft });
+      const prov = new ethers.BrowserProvider(wcProvider);
+      const signer = await prov.getSigner();
+      const userAddress = await signer.getAddress();
 
-    return userAddress;
+      const lottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
+      const nft = new ethers.Contract(nftAddress, nftAbi, signer);
+
+      setProvider(prov);
+      setSigner(signer);
+      setAddress(userAddress);
+      setContracts({ lottery, nft });
+
+      return userAddress;
+    }
+
+    // -------------------------------
+    // 3️⃣ If nothing works (rare case)
+    // -------------------------------
+    alert("No wallet detected. Please install MetaMask.");
+    return null;
+
   } catch (err) {
-    console.error("Error connecting wallet:", err);
+    console.error("❌ Wallet connection failed:", err);
+    return null;
   }
 };
+
 
 
   // --- AUTO-CONNECT (if already authorized) ---
