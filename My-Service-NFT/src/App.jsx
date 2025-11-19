@@ -39,14 +39,17 @@ const App = () => {
 
 
     //for loterry data fetch 
-    useEffect(() => {
-      const fetchData = async () => {
-      const data = await getLotteryInfo();
-      setLotteryData(data);
-    };
+useEffect(() => {
+  if (!address) return;   // ❗ block auto-calls before connect
 
-      fetchData();
-},    [getLotteryInfo]);
+  const fetchData = async () => {
+    const data = await getLotteryInfo();
+    setLotteryData(data);
+  };
+
+  fetchData();
+}, [address]);    // <- depends on wallet, NOT getLotteryInfo
+
 
 //service card click handler
 const handleServiceClick = (data) => {
@@ -105,7 +108,7 @@ const handleServiceClick = (data) => {
 
       {/* ----Hero Buttons---- */}
       <div className="flex gap-[24px] mt-[27px]">
-        <HeroButton toLink="#" onClick={!address ? connectWallet : null}>
+        <HeroButton  onClick={!address ? connectWallet : null}>
           {!address ? "Connect Wallet" : "Connected"}
         </HeroButton>
          {/* Buy Ticket Button */}
