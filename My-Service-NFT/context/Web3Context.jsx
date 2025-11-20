@@ -51,41 +51,41 @@ export const Web3Provider = ({ children }) => {
       !window.ethereum;
 
     if (isMobile) {
-      console.log("📱 Mobile Browser: initializing MetaMask SDK");
+  console.log("📱 Mobile Browser: initializing MetaMask SDK");
 
-      // Wait for DOM ready (important for mobile)
-      await new Promise((resolve) => {
-        if (document.readyState === "complete") resolve();
-        else window.addEventListener("load", resolve);
-      });
+  // ⭐ Wait for hydration (important fix)
+  await new Promise((resolve) => setTimeout(resolve, 300));
 
-      const MMSDK = new MetaMaskSDK({
-        dappMetadata: {
-          name: "Service NFT",
-          url: window.location.href,
-        },
+  const MMSDK = new MetaMaskSDK({
+    dappMetadata: {
+      name: "Service NFT",
+      url: window.location.href,
+    },
 
-        shouldShimWeb3: true,
-        enableDebug: true,
+    // ⭐ Required for mobile browser → opens MetaMask app
+    useDeeplink: true,
+    mobileLinks: ["metamask"],
 
-        // FIX: use WebRTC (WebSockets blocked on Vercel mobile sometimes)
-        communicationLayerPreference: "webrtc",
+    // Avoid WebSocket issues on Vercel mobile
+    communicationLayerPreference: "webrtc",
 
-        // Make sure MetaMask app opens
-        mobileLinks: ["metamask"],
-      });
+    // Required for React apps
+    shouldShimWeb3: true,
+    enableDebug: true,
+  });
 
-      const provider = MMSDK.getProvider();
+  const provider = MMSDK.getProvider();
 
-      if (!provider) {
-        console.error("❌ MetaMask SDK failed: provider NULL");
-      } else {
-        console.log("✅ MetaMask SDK Mobile Provider Ready");
-        setEthereum(provider);
-      }
+  if (!provider) {
+    console.error("❌ MetaMask SDK failed: provider NULL");
+  } else {
+    console.log("✅ MetaMask SDK Mobile Provider Ready");
+    setEthereum(provider);
+  }
 
-      return;
-    }
+  return;
+}
+
 
     console.warn("⚠ No wallet found on this device.");
   }
