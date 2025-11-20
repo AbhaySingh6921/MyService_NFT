@@ -29,6 +29,8 @@ const App = () => {
     const [showTicketsPopup, setShowTicketsPopup] = useState(false);
     const [showServicePopup, setShowServicePopup] = useState(false);
     const [servicePopupData, setServicePopupData] = useState(null);
+    const [connecting, setConnecting] = useState(false);
+
     const navigate = useNavigate();
 
     const dummyLotteryData = {
@@ -128,25 +130,36 @@ const handleServiceClick = (data) => {
 
       {/* ----Hero Buttons---- */}
       <div className="flex gap-[24px] mt-[27px]">
-        <HeroButton onClick={connectWallet}>
-  {address ? "Connected" : "Connect Wallet"}
+        <HeroButton
+  onClick={async () => {
+    setConnecting(true);
+    await connectWallet();
+    setConnecting(false);
+  }}
+>
+  {address ? "Connected" : connecting ? "Connecting..." : "Connect Wallet"}
 </HeroButton>
+
 
           
 
 
 
          {/* Buy Ticket Button */}
-    <HeroButton
-      toLink="/buyticket"
-      
-      onClick={() => {
-      navigate("/buyticket");  // 🔥 navigate WITHOUT refresh
-      setShowBuyPopup(true);   // 🔥 also show popup
-    }}
-   >
-     Buy Tickets
-    </HeroButton>
+      <HeroButton
+  toLink="/buyticket"
+  onClick={async () => {
+    if (!address) {
+      await connectWallet(); // mobile opens MetaMask app
+      return;
+    }
+    navigate("/buyticket");
+    setShowBuyPopup(true);
+  }}
+>
+  Buy Tickets
+</HeroButton>
+
 
 
       {/* Popup Modal */}

@@ -22,38 +22,42 @@ export function BuyTicketpop({ onClose }) {
 
   const remainingTickets = maxTickets - totalSold;
 
-  // --------------------------
+  // -----------------------------------------------------------
   // LOAD CONTRACT DATA
-  // --------------------------
+  // -----------------------------------------------------------
   useEffect(() => {
     const fetchPrice = async () => {
       if (!contracts?.lottery) return;
 
-      const ticketPriceWei = await contracts.lottery.ticketPrice();
-      const maxTicketsPerUser = await contracts.lottery.maxTicketsPerUser();
-      const maxTickets = await contracts.lottery.maxTickets();
-      const totalSold = await contracts.lottery.getTotalTicketsSold();
+      try {
+        const ticketPriceWei = await contracts.lottery.ticketPrice();
+        const maxTicketsPerUser = await contracts.lottery.maxTicketsPerUser();
+        const maxTickets = await contracts.lottery.maxTickets();
+        const totalSold = await contracts.lottery.getTotalTicketsSold();
 
-      const price = Number(ethers.formatUnits(ticketPriceWei, 6));
+        const price = Number(ethers.formatUnits(ticketPriceWei, 6));
 
-      setPricePerTicket(price);
-      setMaxTicketPerUser(maxTicketsPerUser.toString());
-      setMaxTickets(Number(maxTickets));
-      setTotalSold(Number(totalSold));
-      setTotal(price * amount);
+        setPricePerTicket(price);
+        setMaxTicketPerUser(maxTicketsPerUser.toString());
+        setMaxTickets(Number(maxTickets));
+        setTotalSold(Number(totalSold));
+        setTotal(price * amount);
+      } catch (err) {
+        console.error("Price Fetch Error:", err);
+      }
     };
 
     fetchPrice();
   }, [contracts, amount]);
 
-  // --------------------------
-  // BUY TICKET
-  // --------------------------
+  // -----------------------------------------------------------
+  // BUY TICKET (Mobile → MetaMask app, Desktop → injected)
+  // -----------------------------------------------------------
   const handleBuy = async () => {
     try {
       if (!address) {
         notify("⚠ Please connect your wallet first.");
-        await connectWallet();
+        await connectWallet(); // mobile → opens MetaMask app
         return;
       }
 
@@ -64,14 +68,17 @@ export function BuyTicketpop({ onClose }) {
 
       setLoading(true);
 
+      // 🔥 On mobile → MetaMask app opens automatically here
       const tx = await buyTicket(amount);
+
       if (!tx.success) {
-        alert(tx.message);
+        notify("❌ Transaction failed");
         return;
       }
 
       notify("🎉 Ticket purchased successfully!");
 
+      // Save form data to backend
       await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
         name,
         email,
@@ -81,12 +88,16 @@ export function BuyTicketpop({ onClose }) {
 
       onClose();
     } catch (err) {
-      console.error(err);
+      console.error("Buy Error:", err);
+      notify("❌ Something went wrong while buying");
     } finally {
       setLoading(false);
     }
   };
 
+  // -----------------------------------------------------------
+  // UI
+  // -----------------------------------------------------------
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-50">
       <div
@@ -99,7 +110,7 @@ export function BuyTicketpop({ onClose }) {
             "0 0 12px rgba(21,191,253,0.2), inset 0 0 8px rgba(156,55,253,0.15)",
         }}
       >
-        {/* Close Button */}
+        {/* Close */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-white/70 hover:text-white text-lg"
@@ -107,7 +118,6 @@ export function BuyTicketpop({ onClose }) {
           ✕
         </button>
 
-        {/* Title */}
         <h2
           className="text-xl font-semibold mb-3 text-center"
           style={{
@@ -119,7 +129,7 @@ export function BuyTicketpop({ onClose }) {
           Buy Tickets
         </h2>
 
-        {/* Wallet NOT connected */}
+        {/* Wallet Not Connected */}
         {!address && (
           <div className="mb-4 text-center text-sm text-red-400">
             ⚠ Wallet not connected
@@ -133,9 +143,8 @@ export function BuyTicketpop({ onClose }) {
           </div>
         )}
 
-        {/* FORM GRID */}
+        {/* FORM */}
         <div className="grid grid-cols-2 gap-3 w-full">
-          {/* Name */}
           <div className="flex flex-col gap-1">
             <label className="text-xs text-white/60">Name</label>
             <input
@@ -147,7 +156,6 @@ export function BuyTicketpop({ onClose }) {
             />
           </div>
 
-          {/* Email */}
           <div className="flex flex-col gap-1">
             <label className="text-xs text-white/60">Email</label>
             <input
@@ -167,7 +175,7 @@ export function BuyTicketpop({ onClose }) {
             </span>
           </div>
 
-          {/* Ticket Amount */}
+          {/* Ticket Count */}
           <div className="flex flex-col gap-1">
             <label className="text-xs text-white/60">Tickets</label>
             <input
@@ -188,7 +196,7 @@ export function BuyTicketpop({ onClose }) {
           </div>
         </div>
 
-        {/* STATS ROW */}
+        {/* Stats */}
         <div className="flex justify-between items-center mt-3 px-1 text-[11px]">
           <div className="flex flex-col items-center">
             <span className="text-white/50">Max/User</span>

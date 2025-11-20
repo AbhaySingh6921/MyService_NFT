@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { ethers } from "ethers";
 import Toast from "../src/components/Toast.jsx";
+
+// Contract imports
 import {
   lotteryAddress,
   nftAddress,
@@ -10,9 +12,18 @@ import {
   nftAbi,
 } from "../lib/ContractConfig.jsx";
 
+// 🔥 WalletConnect V2 Provider
+import { EthereumProvider } from "@walletconnect/ethereum-provider";
+
+// 📌 Your WalletConnect Project ID (from cloud.walletconnect.com)
+const projectId = "ae26db119d30c4bf1eb3ee6fdfb5aa86";
+
 const Web3Context = createContext();
 
 export const Web3Provider = ({ children }) => {
+  // -------------------------------------------------
+  // STATE
+  // -------------------------------------------------
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
   const [address, setAddress] = useState(null);
@@ -23,31 +34,58 @@ export const Web3Provider = ({ children }) => {
   });
 
   const [notifications, setNotifications] = useState([]);
-  const notify = (msg) => setNotifications((p) => [...p, msg]);
 
-  const dappUrl = "https://my-service-nft.vercel.app/"; // your deployed link
-  const metamaskDeepLink = `https://metamask.app.link/dapp/${dappUrl}`;
+  const notify = (msg) => setNotifications((prev) => [...prev, msg]);
 
   // -------------------------------------------------
-  // 🚀 CONNECT WALLET (Desktop + Mobile Deep-Link)
+  // 🟦 CONNECT WALLET (Mobile = WalletConnect, Desktop = MetaMask)
   // -------------------------------------------------
   const connectWallet = async () => {
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    // 1️⃣ Mobile Chrome/Safari → Deep link to MetaMask app
-    if (isMobile && !window.ethereum) {
-      window.location.href = metamaskDeepLink;
-      return;
-    }
+    try {
+      // -------------------------------------------------
+      // 📱 MOBILE FLOW → WALLETCONNECT → METAMASK APP
+      // -------------------------------------------------
+      if (isMobile) {
+        const wc = await EthereumProvider.init({
+          projectId,
+          chains: [11155111], // sepolia
+          optionalChains: [],
+          showQrModal: false, // disable QR on mobile
+          methods: ["eth_sendTransaction", "personal_sign"],
+        });
 
-    // 2️⃣ Desktop / MetaMask in-app browser → Injected provider
-    if (window.ethereum) {
-      try {
+        // 🔥 This opens MetaMask mobile app automatically
+        await wc.connect();
+
+        const prov = new ethers.BrowserProvider(wc);
+        const signer = await prov.getSigner();
+        const user = await signer.getAddress();
+
+        // initialize contracts
+        const lottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
+        const nft = new ethers.Contract(nftAddress, nftAbi, signer);
+
+        setProvider(prov);
+        setSigner(signer);
+        setAddress(user);
+        setContracts({ lottery, nft });
+
+        notify("📱 Connected using MetaMask Mobile");
+        return user;
+      }
+
+      // -------------------------------------------------
+      // 🖥 DESKTOP FLOW → INJECTED METAMASK
+      // -------------------------------------------------
+      if (window.ethereum) {
         const accounts = await window.ethereum.request({
           method: "eth_requestAccounts",
         });
 
         const user = accounts[0];
+
         const prov = new ethers.BrowserProvider(window.ethereum);
         const signer = await prov.getSigner();
 
@@ -59,59 +97,70 @@ export const Web3Provider = ({ children }) => {
         setAddress(user);
         setContracts({ lottery, nft });
 
+        notify("🖥 Connected using MetaMask");
         return user;
-      } catch (err) {
-        console.error("Connection Failed:", err);
-        notify("⚠ Wallet connection failed");
       }
-    }
 
-    alert("Please install MetaMask.");
+      alert("Please install MetaMask.");
+      return null;
+    } catch (err) {
+      console.error("Connection Error:", err);
+      notify("⚠ Wallet connection failed");
+      return null;
+    }
   };
 
   // -------------------------------------------------
-  // 🔄 AUTO CONNECT (only if MetaMask injected)
+  // 🌀 AUTO LOAD (Desktop only)
   // -------------------------------------------------
   useEffect(() => {
-    async function load() {
-      if (window.ethereum) {
+    const autoConnect = async () => {
+      if (!window.ethereum) return;
+
+      try {
         const accounts = await window.ethereum.request({
           method: "eth_accounts",
         });
 
-        if (accounts.length > 0) {
-          const user = accounts[0];
-          const prov = new ethers.BrowserProvider(window.ethereum);
-          const signer = await prov.getSigner();
+        if (accounts.length === 0) return;
 
-          const lottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
-          const nft = new ethers.Contract(nftAddress, nftAbi, signer);
+        const user = accounts[0];
 
-          setProvider(prov);
-          setSigner(signer);
-          setAddress(user);
-          setContracts({ lottery, nft });
-        }
+        const prov = new ethers.BrowserProvider(window.ethereum);
+        const signer = await prov.getSigner();
+
+        const lottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
+        const nft = new ethers.Contract(nftAddress, nftAbi, signer);
+
+        setProvider(prov);
+        setSigner(signer);
+        setAddress(user);
+        setContracts({ lottery, nft });
+
+       
+      } catch (err) {
+        console.error("Auto-connect error:", err);
       }
-    }
+    };
 
-    load();
+    autoConnect();
   }, []);
 
   // -------------------------------------------------
-  // 🛒 BUY TICKET
+  // 🟧 BUY TICKET
   // -------------------------------------------------
   const buyTicket = async (amount = 1) => {
     try {
       if (!contracts.lottery) throw new Error("Connect wallet first");
 
+      // 🔥 Mobile → this triggers redirection to MetaMask app
       const tx = await contracts.lottery.buyTickets(amount);
       await tx.wait();
 
       return { success: true };
     } catch (err) {
       console.error("Buy Ticket Error:", err);
-      return { success: false };
+      return { success: false, message: err.message };
     }
   };
 
@@ -142,22 +191,20 @@ export const Web3Provider = ({ children }) => {
   };
 
   const getMsaAgreement = async () => {
-  try {
-    if (!contracts.lottery) {
-      console.warn("MSA: lottery contract not loaded");
+    try {
+      if (!contracts.lottery) return null;
+
+      const msaUri = await contracts.lottery.getMsaURI();
+      return msaUri;
+    } catch (err) {
+      console.error("MSA Fetch Error:", err);
       return null;
     }
+  };
 
-    const msaUri = await contracts.lottery.getMsaURI();
-    return msaUri;
-
-  } catch (err) {
-    console.error("Error fetching MSA:", err);
-    return null;
-  }
-};
-
-
+  // -------------------------------------------------
+  // CONTEXT RETURN
+  // -------------------------------------------------
   return (
     <Web3Context.Provider
       value={{
@@ -168,19 +215,20 @@ export const Web3Provider = ({ children }) => {
         connectWallet,
         buyTicket,
         getLotteryInfo,
+        getMsaAgreement,
         notifications,
         notify,
-        getMsaAgreement
       }}
     >
       {children}
 
+      {/* Toast notifications */}
       {notifications.map((msg, i) => (
         <Toast
           key={i}
           message={msg}
           onClose={() =>
-            setNotifications((p) => p.filter((_, idx) => idx !== i))
+            setNotifications((prev) => prev.filter((_, idx) => idx !== i))
           }
         />
       ))}
