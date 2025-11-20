@@ -46,21 +46,43 @@ export const Web3Provider = ({ children }) => {
       }
 
       // 2️⃣ Mobile Chrome → use MetaMask SDK
-      if (isMobileBrowser()) {
-        console.log("📱 Using MetaMask SDK for mobile");
+      // 2️⃣ Mobile Chrome → use MetaMask SDK
+if (isMobileBrowser()) {
+  console.log("📱 Using MetaMask SDK for mobile");
 
-        const MMSDK = new MetaMaskSDK({
-          dappMetadata: {
-            name: "Service NFT",
-            url: window.location.href,
-          },
-        });
+  const MMSDK = new MetaMaskSDK({
+    dappMetadata: {
+      name: "Service NFT",
+      url: window.location.href,
+    },
 
-        const mmProvider = MMSDK.getProvider();
+    mobileLinks: ["metamask"],
+    extension: { customProvider: null },
 
-        setEthereum(mmProvider);
-        return;
-      }
+    enableDebug: true,
+    shouldShimWeb3: true,
+
+    communicationLayerPreference: "webrtc", // ⭐ Fix provider null
+    preferDesktop: false,
+
+    logging: {
+      developerMode: true
+    }
+  });
+
+  const mmProvider = MMSDK.getProvider();
+
+  if (mmProvider) {
+    console.log("📱 MetaMask SDK provider ready");
+    setEthereum(mmProvider);
+  } else {
+    console.error("❌ SDK provider NULL (Mobile Chrome blocked WebRTC)");
+  }
+
+  return;
+}
+
+
 
       console.warn("⚠ No wallet provider found");
     }
