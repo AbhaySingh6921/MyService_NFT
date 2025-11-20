@@ -22,7 +22,7 @@ import RemainingTickets from "./components/RemainingTickets.jsx";
 
 const App = () => {
     //smart contracts integration 
-    const {connectWallet,buyTicket,address,getLotteryInfo}=useWeb3();
+    const {connectWallet,buyTicket,address,getLotteryInfo,contracts}=useWeb3();
     const [showBuyPopup, setShowBuyPopup] = useState(false);
     const [lotteryData, setLotteryData] = useState(null);
     const [showParticipants, setShowParticipants] = useState(false);
@@ -40,15 +40,16 @@ const App = () => {
 
     //for loterry data fetch 
 useEffect(() => {
-  if (!address) return;   // ❗ block auto-calls before connect
+  if (!address || !contracts.lottery) return;
 
-  const fetchData = async () => {
+  const load = async () => {
     const data = await getLotteryInfo();
     setLotteryData(data);
   };
 
-  fetchData();
-}, [address]);    // <- depends on wallet, NOT getLotteryInfo
+  load();
+}, [address, contracts]);
+   // <- depends on wallet, NOT getLotteryInfo
 
 
 //service card click handler
