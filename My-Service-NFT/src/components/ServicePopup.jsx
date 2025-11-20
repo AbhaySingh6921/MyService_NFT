@@ -21,9 +21,18 @@ const ServicePopup = ({ data, onClose }) => {
           ✕
         </button>
 
+        {/* Image */}
+        {data.imageUrl && (
+          <img
+            src={data.imageUrl}
+            alt={data.title}
+            className="w-full rounded-lg mb-4 border border-white/10"
+          />
+        )}
+
         {/* Title */}
         <h2
-          className="text-2xl font-semibold mb-4"
+          className="text-2xl font-semibold mb-2"
           style={{
             background: "linear-gradient(90deg, #15BFFD, #9C37FD)",
             WebkitBackgroundClip: "text",
@@ -33,29 +42,26 @@ const ServicePopup = ({ data, onClose }) => {
           {data.title}
         </h2>
 
-        {/* Content */}
-        <div className="flex flex-col gap-4">
-          <div className="p-3 bg-black/30 rounded-lg border border-white/10">
-            <p className="text-white/80 text-sm">{data.description}</p>
-          </div>
+        {/* Subtitle */}
+        <p className="text-white/70 text-sm mb-4">{data.subTitle}</p>
 
-          <div className="p-3 bg-black/30 rounded-lg border border-white/10">
-            <div className="text-sm mb-1 text-white/70">Price</div>
-            <div className="text-[#15BFFD] font-semibold">{data.price}</div>
-          </div>
-
-          <div className="p-3 bg-black/30 rounded-lg border border-white/10">
-            <div className="text-sm mb-1 text-white/70">Duration</div>
-            <div className="text-[#9C37FD] font-semibold">{data.duration}</div>
-          </div>
-
-          {data.extra && (
-            <div className="p-3 bg-black/30 rounded-lg border border-white/10">
-              <div className="text-sm mb-1 text-white/70">Extra</div>
-              <div className="text-[#15BFFD] font-semibold">{data.extra}</div>
-            </div>
-          )}
-        </div>
+        {/* Google Drive Link Button */}
+        {data.driveLink && (
+          <a
+            href={data.driveLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="
+              block w-full text-center py-2 rounded-lg 
+              font-semibold mt-3
+              bg-[#090D2D] border border-white/10 
+              hover:scale-[1.03] active:scale-[0.97]
+              transition-all
+            "
+          >
+            📄 Open Document
+          </a>
+        )}
       </div>
     </div>
   );

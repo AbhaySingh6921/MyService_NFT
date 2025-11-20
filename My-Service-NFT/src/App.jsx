@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 import ParticipantsPopup from "./components/ParticipantsPopup.jsx";
 import TicketsPopup from "./components/TicketsPopup.jsx";
 import ServicePopup from "./components/ServicePopup.jsx";
-import RemainingTickets from "./components/RemainingTickets.jsx";
+
 
 
 
@@ -61,22 +61,26 @@ const handleServiceClick = (data) => {
 
 
   const serviceData = [
-    {
-      imageUrl: "/serviceCards/Professional&Web3Services.png",
-      title: "Professional & Web3 Services",
-      subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
-    },
-    {
-      imageUrl: "/serviceCards/DR_AIDAN_WELLNECY.png",
-      title: "DR_AIDAN_WELLNECY",
-      subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
-    },
-    {
-      imageUrl: "/serviceCards/Personal&Domestic.png",
-      title: "Personal & Domestic",
-      subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
-    },
-  ];
+  {
+    imageUrl: "/serviceCards/Professional&Web3Services.png",
+    title: "Professional & Web3 Services",
+    subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
+    driveLink: "https://drive.google.com/drive/u/0/folders/1pPb6BYuB503bVSEOKlCdPeHG-MZfdC5d",
+  },
+  {
+    imageUrl: "/serviceCards/DR_AIDAN_WELLNECY.png",
+    title: "DR_AIDAN_WELLNECY",
+    subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
+    driveLink: "https://drive.google.com/yourfile2",
+  },
+  {
+    imageUrl: "/serviceCards/Personal&Domestic.png",
+    title: "Personal & Domestic",
+    subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
+    driveLink: "https://drive.google.com/yourfile3",
+  },
+];
+
 
   return (
     <div className="pageWrapper">
@@ -90,10 +94,25 @@ const handleServiceClick = (data) => {
            portfolioLink="https://your-portfolio-link.com"
         ></ProfileCard>
         {/* ----Remaining Tickets Instead of Countdown---- */}
-        <RemainingTickets
-  maxTickets={address ? lotteryData?.maxTickets : dummyLotteryData.maxTickets}
-  totalSold={address ? lotteryData?.totalSold : dummyLotteryData.totalSold}
-/>
+        {/* ----Remaining Tickets / Info ---- */}
+      <div
+  className="
+    text-sm 
+    font-medium
+    text-transparent 
+    bg-clip-text
+  "
+  style={{
+    backgroundImage: "linear-gradient(90deg, #15BFFD, #9C37FD)",
+    WebkitBackgroundClip: "text",
+  }}
+>
+  🎟️ Raffle ends when all tickets are sold.
+</div>
+
+
+  
+
 
         </div>
 
@@ -206,10 +225,20 @@ const handleServiceClick = (data) => {
           userName={"Emerson Philips"}
           units={3.2}
         ></ProfileCard>
-        <RemainingTickets
-  maxTickets={address ? lotteryData?.maxTickets : dummyLotteryData.maxTickets}
-  totalSold={address ? lotteryData?.totalSold : dummyLotteryData.totalSold}
-/>
+        <div
+  className="
+    text-sm 
+    font-medium
+    text-transparent 
+    bg-clip-text
+  "
+  style={{
+    backgroundImage: "linear-gradient(90deg, #15BFFD, #9C37FD)",
+    WebkitBackgroundClip: "text",
+  }}
+>
+  🎟️ Raffle ends when all tickets are sold.
+</div>
 
       </div>
 
@@ -237,7 +266,8 @@ const handleServiceClick = (data) => {
     title={item.title}
     subtitle={item.subTitle}
     image={item.imageUrl}
-    onServiceClick={handleServiceClick}  // ⭐ passed to child
+    onServiceClick={() => handleServiceClick(item)}
+  // ⭐ passed to child
   />
 ))}
 
