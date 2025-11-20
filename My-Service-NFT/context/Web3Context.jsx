@@ -141,6 +141,23 @@ export const Web3Provider = ({ children }) => {
     }
   };
 
+  const getMsaAgreement = async () => {
+  try {
+    if (!contracts.lottery) {
+      console.warn("MSA: lottery contract not loaded");
+      return null;
+    }
+
+    const msaUri = await contracts.lottery.getMsaURI();
+    return msaUri;
+
+  } catch (err) {
+    console.error("Error fetching MSA:", err);
+    return null;
+  }
+};
+
+
   return (
     <Web3Context.Provider
       value={{
@@ -153,6 +170,7 @@ export const Web3Provider = ({ children }) => {
         getLotteryInfo,
         notifications,
         notify,
+        getMsaAgreement
       }}
     >
       {children}
