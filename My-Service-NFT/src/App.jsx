@@ -108,14 +108,14 @@ const handleServiceClick = (data) => {
 
       {/* ----Hero Buttons---- */}
       <div className="flex gap-[24px] mt-[27px]">
-        <HeroButton  onClick={() => {
-  if (!address) connectWallet();
-}}>
-          {!address ? "Connect Wallet" : "Connected"}
-        </HeroButton>
+        <HeroButton onClick={connectWallet}>
+  {address ? "Connected" : "Connect Wallet"}
+</HeroButton>
+
+          
 
 
-        
+
          {/* Buy Ticket Button */}
     <HeroButton
       toLink="/buyticket"
