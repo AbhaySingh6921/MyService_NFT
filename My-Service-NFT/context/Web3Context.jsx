@@ -16,7 +16,7 @@ import {
 import { EthereumProvider } from "@walletconnect/ethereum-provider";
 
 // 📌 Your WalletConnect Project ID (from cloud.walletconnect.com)
-const projectId = "ae26db119d30c4bf1eb3ee6fdfb5aa86";
+const projectId = "bf59cafc9ab6aee1a645b92a22cf252e";
 
 const Web3Context = createContext();
 
