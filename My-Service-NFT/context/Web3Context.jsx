@@ -37,58 +37,62 @@ export const Web3Provider = ({ children }) => {
   // INIT PROVIDER
   // ------------------------------------------
   useEffect(() => {
-    async function initProvider() {
-      // 1️⃣ Desktop or MetaMask App → use injected provider
-      if (window.ethereum) {
-        console.log("💻 Using injected MetaMask provider");
-        setEthereum(window.ethereum);
-        return;
+  async function init() {
+    // 1️⃣ Desktop or MetaMask in-app browser
+    if (window.ethereum) {
+      console.log("💻 Injected MetaMask detected");
+      setEthereum(window.ethereum);
+      return;
+    }
+
+    // 2️⃣ Mobile Browser (Chrome/Safari/Edge)
+    const isMobile =
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) &&
+      !window.ethereum;
+
+    if (isMobile) {
+      console.log("📱 Mobile Browser: initializing MetaMask SDK");
+
+      // Wait for DOM ready (important for mobile)
+      await new Promise((resolve) => {
+        if (document.readyState === "complete") resolve();
+        else window.addEventListener("load", resolve);
+      });
+
+      const MMSDK = new MetaMaskSDK({
+        dappMetadata: {
+          name: "Service NFT",
+          url: window.location.href,
+        },
+
+        shouldShimWeb3: true,
+        enableDebug: true,
+
+        // FIX: use WebRTC (WebSockets blocked on Vercel mobile sometimes)
+        communicationLayerPreference: "webrtc",
+
+        // Make sure MetaMask app opens
+        mobileLinks: ["metamask"],
+      });
+
+      const provider = MMSDK.getProvider();
+
+      if (!provider) {
+        console.error("❌ MetaMask SDK failed: provider NULL");
+      } else {
+        console.log("✅ MetaMask SDK Mobile Provider Ready");
+        setEthereum(provider);
       }
 
-      // 2️⃣ Mobile Chrome → use MetaMask SDK
-      // 2️⃣ Mobile Chrome → use MetaMask SDK
-if (isMobileBrowser()) {
-  console.log("📱 Using MetaMask SDK for mobile");
-
-  const MMSDK = new MetaMaskSDK({
-    dappMetadata: {
-      name: "Service NFT",
-      url: window.location.href,
-    },
-
-    mobileLinks: ["metamask"],
-    extension: { customProvider: null },
-
-    enableDebug: true,
-    shouldShimWeb3: true,
-
-    communicationLayerPreference: "webrtc", // ⭐ Fix provider null
-    preferDesktop: false,
-
-    logging: {
-      developerMode: true
+      return;
     }
-  });
 
-  const mmProvider = MMSDK.getProvider();
-
-  if (mmProvider) {
-    console.log("📱 MetaMask SDK provider ready");
-    setEthereum(mmProvider);
-  } else {
-    console.error("❌ SDK provider NULL (Mobile Chrome blocked WebRTC)");
+    console.warn("⚠ No wallet found on this device.");
   }
 
-  return;
-}
+  init();
+}, []);
 
-
-
-      console.warn("⚠ No wallet provider found");
-    }
-
-    initProvider();
-  }, []);
 
   // ------------------------------------------
   // CONNECT WALLET
