@@ -52,7 +52,20 @@ export function BuyTicketpop({ onClose }) {
     };
 
     fetchPrice();
-  }, [contracts, amount]);
+  }, [contracts, amount,address]);
+
+  useEffect(() => {
+  if (address && contracts?.lottery) {
+    const reFetch = async () => {
+      const ticketPriceWei = await contracts.lottery.ticketPrice();
+      const price = Number(ethers.formatUnits(ticketPriceWei, 6));
+      setPricePerTicket(price);
+      setTotal(price * amount);
+    };
+    reFetch();
+  }
+}, [address, contracts]);
+
 
   // -----------------------------------------------------------
   // BUY TICKET
@@ -102,6 +115,7 @@ export function BuyTicketpop({ onClose }) {
   // UI
   // -----------------------------------------------------------
   return (
+    
     <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-50">
       <div
         className="relative p-6 rounded-xl shadow-2xl text-white w-[480px]"

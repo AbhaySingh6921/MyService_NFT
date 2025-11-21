@@ -18,6 +18,7 @@ import {
   WagmiConfig,
   configureChains,
   createConfig,
+  useConnect,
 } from "wagmi";
 
 import { sepolia } from "wagmi/chains";
@@ -81,7 +82,7 @@ const connectors = connectorsForWallets([
 
 
 const wagmiConfig = createConfig({
-  autoConnect:false,
+  autoConnect: true,
   connectors,
   publicClient,
 });
@@ -98,6 +99,7 @@ export const useWeb3 = () => useContext(Web3Context);
 function Web3Provider({ children }) {
   const { address: wagmiAddress, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
+  const { isSuccess } = useConnect();
 
   const [address, setAddress] = useState(null);
   const [contracts, setContracts] = useState({ lottery: null, nft: null });
@@ -123,6 +125,16 @@ function Web3Provider({ children }) {
 
     load();
   }, [isConnected, walletClient, wagmiAddress]);
+  // Refresh when wallet connects on mobile Chrome → MetaMask app → back to Chrome
+useEffect(() => {
+  if (isSuccess) {
+    console.log("Mobile wallet connected → refreshing DApp");
+    setTimeout(() => {
+      window.location.reload();
+    }, 300);
+  }
+}, [isSuccess]);
+
 
   // ---------------- BUY TICKET ---------------
   const buyTicket = async (amount = 1) => {
