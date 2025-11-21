@@ -14,6 +14,8 @@ import { useNavigate } from "react-router-dom";
 import ParticipantsPopup from "./components/ParticipantsPopup.jsx";
 import TicketsPopup from "./components/TicketsPopup.jsx";
 import ServicePopup from "./components/ServicePopup.jsx";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+
 
 
 
@@ -130,15 +132,21 @@ const handleServiceClick = (data) => {
 
       {/* ----Hero Buttons---- */}
       <div className="flex gap-[24px] mt-[27px]">
-        <HeroButton
-  onClick={async () => {
-    setConnecting(true);
-    await connectWallet();
-    setConnecting(false);
+      <ConnectButton.Custom>
+  {({
+    account,
+    chain,
+    openConnectModal,
+    openAccountModal,
+  }) => {
+    return (
+      <HeroButton onClick={account ? openAccountModal : openConnectModal}>
+        {account ? "Connected" : "Connect Wallet"}
+      </HeroButton>
+    );
   }}
->
-  {address ? "Connected" : connecting ? "Connecting..." : "Connect Wallet"}
-</HeroButton>
+</ConnectButton.Custom>
+
 
 
           

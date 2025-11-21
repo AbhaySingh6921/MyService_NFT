@@ -5,8 +5,12 @@ import { useWeb3 } from "../../context/Web3Context";
 import { ethers } from "ethers";
 import axios from "axios";
 
+// RainbowKit hook
+import { useConnectModal } from "@rainbow-me/rainbowkit";
+
 export function BuyTicketpop({ onClose }) {
-  const { buyTicket, contracts, address, notify, connectWallet } = useWeb3();
+  const { buyTicket, contracts, address, notify } = useWeb3();
+  const { openConnectModal } = useConnectModal(); // ⭐ RainbowKit connect popup
 
   const [amount, setAmount] = useState(1);
   const [pricePerTicket, setPricePerTicket] = useState(0);
@@ -38,7 +42,7 @@ export function BuyTicketpop({ onClose }) {
         const price = Number(ethers.formatUnits(ticketPriceWei, 6));
 
         setPricePerTicket(price);
-        setMaxTicketPerUser(maxTicketsPerUser.toString());
+        setMaxTicketPerUser(Number(maxTicketsPerUser));
         setMaxTickets(Number(maxTickets));
         setTotalSold(Number(totalSold));
         setTotal(price * amount);
@@ -51,24 +55,24 @@ export function BuyTicketpop({ onClose }) {
   }, [contracts, amount]);
 
   // -----------------------------------------------------------
-  // BUY TICKET (Mobile → MetaMask app, Desktop → injected)
+  // BUY TICKET
   // -----------------------------------------------------------
   const handleBuy = async () => {
     try {
+      // ⭐ WALLET NOT CONNECTED → OPEN RAINBOWKIT MODAL
       if (!address) {
         notify("⚠ Please connect your wallet first.");
-        await connectWallet(); // mobile → opens MetaMask app
+        openConnectModal();
         return;
       }
 
       if (!name || !email) {
-        notify("Please fill in your name and email.");
+        notify("⚠ Please fill in your name and email.");
         return;
       }
 
       setLoading(true);
 
-      // 🔥 On mobile → MetaMask app opens automatically here
       const tx = await buyTicket(amount);
 
       if (!tx.success) {
@@ -78,7 +82,6 @@ export function BuyTicketpop({ onClose }) {
 
       notify("🎉 Ticket purchased successfully!");
 
-      // Save form data to backend
       await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
         name,
         email,
@@ -135,7 +138,7 @@ export function BuyTicketpop({ onClose }) {
             ⚠ Wallet not connected
             <br />
             <button
-              onClick={connectWallet}
+              onClick={openConnectModal}
               className="mt-2 px-4 py-2 rounded-md bg-[#15BFFD]/20 border border-[#15BFFD]/40 hover:bg-[#15BFFD]/30"
             >
               Connect Wallet
@@ -152,7 +155,7 @@ export function BuyTicketpop({ onClose }) {
               placeholder="Full name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="px-3 py-2 rounded-md bg-black/40 border border-white/10 text-sm focus:border-[#15BFFD]"
+              className="px-3 py-2 rounded-md bg-black/40 border border-white/10 text-sm"
             />
           </div>
 
@@ -163,11 +166,10 @@ export function BuyTicketpop({ onClose }) {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="px-3 py-2 rounded-md bg-black/40 border border-white/10 text-sm focus:border-[#15BFFD]"
+              className="px-3 py-2 rounded-md bg-black/40 border border-white/10 text-sm"
             />
           </div>
 
-          {/* Wallet */}
           <div className="col-span-2 text-xs text-white/60 flex justify-between bg-black/30 border border-white/10 p-2 rounded-md mt-1">
             <span>Wallet:</span>
             <span className="text-[#15BFFD]">
@@ -175,7 +177,6 @@ export function BuyTicketpop({ onClose }) {
             </span>
           </div>
 
-          {/* Ticket Count */}
           <div className="flex flex-col gap-1">
             <label className="text-xs text-white/60">Tickets</label>
             <input
@@ -183,11 +184,10 @@ export function BuyTicketpop({ onClose }) {
               min="1"
               value={amount}
               onChange={(e) => setAmount(Number(e.target.value))}
-              className="px-3 py-2 rounded-md bg-black/40 border border-white/10 text-sm focus:border-[#15BFFD]"
+              className="px-3 py-2 rounded-md bg-black/40 border border-white/10 text-sm"
             />
           </div>
 
-          {/* Total */}
           <div className="flex flex-col gap-1">
             <label className="text-xs text-white/60">Total</label>
             <div className="px-3 py-2 rounded-md bg-black/40 border border-white/10 text-sm flex items-center">
