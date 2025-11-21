@@ -35,7 +35,7 @@ import {
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 
-const projectId = "ae26db119d30c4bf1eb3ee6fdfb5aa86";
+const projectId = "bf59cafc9ab6aee1a645b92a22cf252e";
 
 // ------------------------------------------------------------------
 // WAGMI + RAINBOWKIT CONFIG
@@ -49,12 +49,36 @@ const connectors = connectorsForWallets([
   {
     groupName: "Recommended",
     wallets: [
-      metaMaskWallet({ projectId, chains }),
+      metaMaskWallet({
+        projectId,
+        chains,
+        walletConnectOptions: {
+          projectId,
+          metadata: {
+            name: "My Service NFT",
+            description: "Your NFT Lottery Dapp",
+            url: "https://my-service-nft.vercel.app",
+            icons: ["https://my-service-nft.vercel.app/icon.png"],
+          },
+        },
+      }),
+
       injectedWallet({ chains }),
-      walletConnectWallet({ projectId, chains }),
+
+      walletConnectWallet({
+        projectId,
+        chains,
+        metadata: {
+          name: "My Service NFT",
+          description: "Your NFT Lottery Dapp",
+          url: "https://my-service-nft.vercel.app",
+          icons: ["https://my-service-nft.vercel.app/icon.png"],
+        },
+      }),
     ],
   },
 ]);
+
 
 const wagmiConfig = createConfig({
   autoConnect: true,
