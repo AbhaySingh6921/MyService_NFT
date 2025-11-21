@@ -15,10 +15,10 @@ import {
 import {
   useAccount,
   useWalletClient,
+  usePublicClient, // ⭐ Added this
   WagmiConfig,
   configureChains,
   createConfig,
-  useConnect,
 } from "wagmi";
 
 import { sepolia } from "wagmi/chains";
@@ -32,16 +32,15 @@ import {
 
 import {
   metaMaskWallet,
-  injectedWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 
 const projectId = "bf59cafc9ab6aee1a645b92a22cf252e";
 
-// ------------------------------------------------------------------
-// WAGMI + RAINBOWKIT CONFIG
-// ------------------------------------------------------------------
-const { chains, publicClient } = configureChains(
+// ------------------------------
+//  WAGMI CONFIG
+// ------------------------------
+const { chains, publicClient: wagmiPublicClient } = configureChains(
   [sepolia],
   [publicProvider()]
 );
@@ -50,110 +49,117 @@ const connectors = connectorsForWallets([
   {
     groupName: "Recommended",
     wallets: [
-      metaMaskWallet({
-        projectId,
-        chains,
-        walletConnectOptions: {
-          projectId,
-          metadata: {
-            name: "My Service NFT",
-            description: "Your NFT Lottery Dapp",
-            url: "https://my-service-nft.vercel.app",
-            icons: ["https://my-service-nft.vercel.app/icon.png"],
-          },
-        },
-      }),
-
-      injectedWallet({ chains }),
-
-      walletConnectWallet({
-        projectId,
-        chains,
-        metadata: {
-          name: "My Service NFT",
-          description: "Your NFT Lottery Dapp",
-          url: "https://my-service-nft.vercel.app",
-          icons: ["https://my-service-nft.vercel.app/icon.png"],
-        },
-      }),
+      metaMaskWallet({ projectId, chains }),
+      walletConnectWallet({ projectId, chains }),
     ],
   },
 ]);
 
-
 const wagmiConfig = createConfig({
   autoConnect: true,
   connectors,
-  publicClient,
+  publicClient: wagmiPublicClient,
 });
 
-// ------------------------------------------------------------------
-// CONTEXT
-// ------------------------------------------------------------------
+// ------------------------------
 const Web3Context = createContext();
 export const useWeb3 = () => useContext(Web3Context);
 
-// ------------------------------------------------------------------
-// PROVIDER (INSIDE RAINBOWKIT)
-// ------------------------------------------------------------------
+// ------------------------------
 function Web3Provider({ children }) {
   const { address: wagmiAddress, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
-  const { isSuccess } = useConnect();
+  const publicClient = usePublicClient(); // ⭐ Get public provider for reading data
 
   const [address, setAddress] = useState(null);
+  
+  // ⭐ Initialize with NULL, but we will load Read-Only immediately
   const [contracts, setContracts] = useState({ lottery: null, nft: null });
   const [notifications, setNotifications] = useState([]);
 
   const notify = (msg) => setNotifications((p) => [...p, msg]);
 
-  // ---------------- LOAD BC SIGNER + CONTRACTS ---------------
+  // ----------------------------------------
+  // 1. INITIALIZE READ-ONLY CONTRACTS (Shows data even if not connected)
+  // ----------------------------------------
   useEffect(() => {
-    async function load() {
-      if (!isConnected || !walletClient) return;
+    // If we already have a signer (write access), don't downgrade to read-only
+    if (address && contracts.lottery && contracts.lottery.runner) return;
 
-      setAddress(wagmiAddress);
+    const provider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com"); // or use publicClient
+    
+    const readLottery = new ethers.Contract(lotteryAddress, lotteryAbi, provider);
+    const readNft = new ethers.Contract(nftAddress, nftAbi, provider);
 
-      const provider = new ethers.BrowserProvider(walletClient);
-      const signer = await provider.getSigner();
+    console.log("📢 Loaded Read-Only Contracts");
+    setContracts({ lottery: readLottery, nft: readNft });
+  }, []); // Run once on mount
 
-      setContracts({
-        lottery: new ethers.Contract(lotteryAddress, lotteryAbi, signer),
-        nft: new ethers.Contract(nftAddress, nftAbi, signer),
-      });
+  // ----------------------------------------
+  // 2. UPGRADE TO SIGNER (WRITE ACCESS) WHEN CONNECTED
+  // ----------------------------------------
+  useEffect(() => {
+    async function loadSigner() {
+      if (!isConnected || !walletClient) {
+        setAddress(null);
+        return;
+      }
+
+      try {
+        setAddress(wagmiAddress);
+
+        // Convert Wagmi Client to Ethers Signer
+        const provider = new ethers.BrowserProvider(walletClient);
+        const signer = await provider.getSigner();
+
+        const writeLottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
+        const writeNft = new ethers.Contract(nftAddress, nftAbi, signer);
+
+        console.log("✅ Wallet Connected: Loaded Signer Contracts");
+        setContracts({ lottery: writeLottery, nft: writeNft });
+      } catch (error) {
+        console.error("Error loading signer:", error);
+      }
     }
 
-    load();
+    loadSigner();
   }, [isConnected, walletClient, wagmiAddress]);
-  // Refresh when wallet connects on mobile Chrome → MetaMask app → back to Chrome
-useEffect(() => {
-  if (isSuccess) {
-    console.log("Mobile wallet connected → refreshing DApp");
-    setTimeout(() => {
-      window.location.reload();
-    }, 300);
-  }
-}, [isSuccess]);
 
-
-  // ---------------- BUY TICKET ---------------
+  // ----------------------------------------
+  // BUY TICKET
+  // ----------------------------------------
   const buyTicket = async (amount = 1) => {
     try {
+      if (!address || !contracts.lottery) {
+        notify("⚠ Wallet not fully loaded yet");
+        return { success: false };
+      }
+
+      // Check if we have a signer (runner)
+      if (!contracts.lottery.runner) {
+        notify("⚠ Read-only mode. Please reconnect wallet.");
+        return { success: false };
+      }
+
       const tx = await contracts.lottery.buyTickets(amount);
+      notify("⏳ Transaction Sent...");
       await tx.wait();
       notify("🎉 Ticket Purchased!");
       return { success: true };
     } catch (err) {
+      console.error(err);
       notify("❌ Transaction failed");
       return { success: false };
     }
   };
 
-  // ---------------- LOTTERY INFO ---------------
+  // ----------------------------------------
+  // LOTTERY INFO (Works with Read-Only or Signer)
+  // ----------------------------------------
   const getLotteryInfo = async () => {
     if (!contracts.lottery) return null;
-
     try {
+      // Simple read calls work with both Provider and Signer
       const [status, totalSold, ticketPrice, maxTickets] = await Promise.all([
         contracts.lottery.getLotteryStatus(),
         contracts.lottery.getTotalTicketsSold(),
@@ -167,17 +173,17 @@ useEffect(() => {
         maxTickets: Number(maxTickets),
         ticketPrice: ethers.formatUnits(ticketPrice, 6),
       };
-    } catch {
+    } catch (error) {
+      console.error("Error fetching lottery info:", error);
       return null;
     }
   };
+
   const getMsaAgreement = async () => {
     try {
       if (!contracts.lottery) return null;
-      const msaUri = await contracts.lottery.getMsaURI();
-      return msaUri;
-    } catch (err) {
-      console.error("MSA Fetch Error:", err);
+      return await contracts.lottery.getMsaURI();
+    } catch {
       return null;
     }
   };
@@ -189,9 +195,9 @@ useEffect(() => {
         contracts,
         buyTicket,
         getLotteryInfo,
+        getMsaAgreement,
         notifications,
         notify,
-        getMsaAgreement 
       }}
     >
       {children}
@@ -209,13 +215,11 @@ useEffect(() => {
   );
 }
 
-// ------------------------------------------------------------------
-// MASTER WRAPPER — MUST WRAP ENTIRE APP
-// ------------------------------------------------------------------
+// ------------------------------
 export function Web3ProviderWrapper({ children }) {
   return (
     <WagmiConfig config={wagmiConfig}>
-      <RainbowKitProvider chains={chains} modalSize="compact">
+      <RainbowKitProvider chains={chains}>
         <Web3Provider>{children}</Web3Provider>
       </RainbowKitProvider>
     </WagmiConfig>

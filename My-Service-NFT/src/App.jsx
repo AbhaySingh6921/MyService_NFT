@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 import ParticipantsPopup from "./components/ParticipantsPopup.jsx";
 import TicketsPopup from "./components/TicketsPopup.jsx";
 import ServicePopup from "./components/ServicePopup.jsx";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
 
 
 
@@ -24,7 +24,8 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const App = () => {
     //smart contracts integration 
-    const {connectWallet,buyTicket,address,getLotteryInfo,contracts}=useWeb3();
+    const {buyTicket,address,getLotteryInfo,contracts}=useWeb3();
+    const { openConnectModal } = useConnectModal();
     const [showBuyPopup, setShowBuyPopup] = useState(false);
     const [lotteryData, setLotteryData] = useState(null);
     const [showParticipants, setShowParticipants] = useState(false);
@@ -155,18 +156,21 @@ const handleServiceClick = (data) => {
 
          {/* Buy Ticket Button */}
       <HeroButton
-  toLink="/buyticket"
-  onClick={async () => {
-    if (!address) {
-      await connectWallet(); // mobile opens MetaMask app
-      return;
-    }
-    navigate("/buyticket");
-    setShowBuyPopup(true);
-  }}
->
-  Buy Tickets
-</HeroButton>
+          toLink="/buyticket"
+          onClick={async () => {
+            if (!address) {
+              // ⭐ FIXED: Use openConnectModal provided by RainbowKit
+              if (openConnectModal) {
+                openConnectModal();
+              }
+              return;
+            }
+            navigate("/buyticket");
+            setShowBuyPopup(true);
+          }}
+        >
+          Buy Tickets
+        </HeroButton>
 
 
 

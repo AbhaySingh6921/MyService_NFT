@@ -52,7 +52,7 @@ export function BuyTicketpop({ onClose }) {
     };
 
     fetchPrice();
-  }, [contracts, amount,address]);
+  }, [contracts, address, amount]); // FIX: address added
 
   useEffect(() => {
   if (address && contracts?.lottery) {
