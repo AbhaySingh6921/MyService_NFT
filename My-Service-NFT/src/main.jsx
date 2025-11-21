@@ -10,10 +10,12 @@ import "./polyfills";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
+    <BrowserRouter>
     <Web3ProviderWrapper>
-      <BrowserRouter>
+      
         <App />
-      </BrowserRouter>
+      
     </Web3ProviderWrapper>
+    </BrowserRouter>
   </React.StrictMode>
 );
