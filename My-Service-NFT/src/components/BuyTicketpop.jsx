@@ -5,46 +5,52 @@ import { useWeb3 } from "../../context/Web3Context";
 import { ethers } from "ethers";
 import axios from "axios";
 
-// RainbowKit hook
+// RainbowKit & Wagmi
 import { useConnectModal } from "@rainbow-me/rainbowkit";
+import { useAccount } from "wagmi"; // ⭐ Import this for instant status
 
 export function BuyTicketpop({ onClose }) {
-  const { buyTicket, contracts, address, notify } = useWeb3();
-  const { openConnectModal } = useConnectModal(); // ⭐ RainbowKit connect popup
+  const { buyTicket, contracts, address: contextAddress, notify } = useWeb3();
+  const { openConnectModal } = useConnectModal();
+  
+  // ⭐ Use Wagmi for instant UI updates on Mobile
+  const { address: wagmiAddress, isConnected } = useAccount();
 
   const [amount, setAmount] = useState(1);
   const [pricePerTicket, setPricePerTicket] = useState(0);
   const [maxTicketPerUser, setMaxTicketPerUser] = useState(0);
+  const [maxTickets, setMaxTickets] = useState(0);
+  const [totalSold, setTotalSold] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
-  const [maxTickets, setMaxTickets] = useState(0);
-  const [totalSold, setTotalSold] = useState(0);
-
   const remainingTickets = maxTickets - totalSold;
 
   // -----------------------------------------------------------
-  // LOAD CONTRACT DATA
+  // LOAD DATA (Prices/Limits)
   // -----------------------------------------------------------
   useEffect(() => {
     const fetchPrice = async () => {
       if (!contracts?.lottery) return;
 
       try {
-        const ticketPriceWei = await contracts.lottery.ticketPrice();
-        const maxTicketsPerUser = await contracts.lottery.maxTicketsPerUser();
-        const maxTickets = await contracts.lottery.maxTickets();
-        const totalSold = await contracts.lottery.getTotalTicketsSold();
+        // Parallel fetch for speed
+        const [priceWei, maxUser, maxTix, sold] = await Promise.all([
+          contracts.lottery.ticketPrice(),
+          contracts.lottery.maxTicketsPerUser(),
+          contracts.lottery.maxTickets(),
+          contracts.lottery.getTotalTicketsSold(),
+        ]);
 
-        const price = Number(ethers.formatUnits(ticketPriceWei, 6));
+        const price = Number(ethers.formatUnits(priceWei, 6)); // Assumes USDC (6 decimals)
 
         setPricePerTicket(price);
-        setMaxTicketPerUser(Number(maxTicketsPerUser));
-        setMaxTickets(Number(maxTickets));
-        setTotalSold(Number(totalSold));
+        setMaxTicketPerUser(Number(maxUser));
+        setMaxTickets(Number(maxTix));
+        setTotalSold(Number(sold));
         setTotal(price * amount);
       } catch (err) {
         console.error("Price Fetch Error:", err);
@@ -52,30 +58,28 @@ export function BuyTicketpop({ onClose }) {
     };
 
     fetchPrice();
-  }, [contracts, address, amount]); // FIX: address added
+  }, [contracts, amount]); // Removed 'address' dependency to allow read-only fetch
 
+  // Recalculate total when amount changes
   useEffect(() => {
-  if (address && contracts?.lottery) {
-    const reFetch = async () => {
-      const ticketPriceWei = await contracts.lottery.ticketPrice();
-      const price = Number(ethers.formatUnits(ticketPriceWei, 6));
-      setPricePerTicket(price);
-      setTotal(price * amount);
-    };
-    reFetch();
-  }
-}, [address, contracts]);
-
+    setTotal(pricePerTicket * amount);
+  }, [amount, pricePerTicket]);
 
   // -----------------------------------------------------------
   // BUY TICKET
   // -----------------------------------------------------------
   const handleBuy = async () => {
     try {
-      // ⭐ WALLET NOT CONNECTED → OPEN RAINBOWKIT MODAL
-      if (!address) {
+      // 1. Check connection via Wagmi (Instant)
+      if (!isConnected) {
         notify("⚠ Please connect your wallet first.");
-        openConnectModal();
+        if (openConnectModal) openConnectModal();
+        return;
+      }
+
+      // 2. Check if Context has finished loading the Signer
+      if (!contextAddress) {
+        notify("⏳ Wallet syncing... Please wait 2 seconds.");
         return;
       }
 
@@ -86,26 +90,28 @@ export function BuyTicketpop({ onClose }) {
 
       setLoading(true);
 
+      // 3. Execute Buy
       const tx = await buyTicket(amount);
 
-      if (!tx.success) {
-        notify("❌ Transaction failed");
+      if (!tx || !tx.success) {
+        // notify handled in context usually, but just in case:
+        setLoading(false);
         return;
       }
 
-      notify("🎉 Ticket purchased successfully!");
-
+      // 4. Backend Sync
       await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
         name,
         email,
-        walletAddress: address.toLowerCase(),
+        walletAddress: contextAddress.toLowerCase(),
         amount,
       });
 
+      notify("🎉 Ticket purchased successfully!");
       onClose();
     } catch (err) {
       console.error("Buy Error:", err);
-      notify("❌ Something went wrong while buying");
+      notify("❌ Transaction failed");
     } finally {
       setLoading(false);
     }
@@ -115,10 +121,9 @@ export function BuyTicketpop({ onClose }) {
   // UI
   // -----------------------------------------------------------
   return (
-    
     <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-50">
       <div
-        className="relative p-6 rounded-xl shadow-2xl text-white w-[480px]"
+        className="relative p-6 rounded-xl shadow-2xl text-white w-[480px] max-w-[90vw]"
         style={{
           background:
             "linear-gradient(135deg, rgba(21,191,253,0.12) 0%, rgba(156,55,253,0.08) 100%)",
@@ -146,8 +151,8 @@ export function BuyTicketpop({ onClose }) {
           Buy Tickets
         </h2>
 
-        {/* Wallet Not Connected */}
-        {!address && (
+        {/* Wallet Warning */}
+        {!isConnected && (
           <div className="mb-4 text-center text-sm text-red-400">
             ⚠ Wallet not connected
             <br />
@@ -187,7 +192,10 @@ export function BuyTicketpop({ onClose }) {
           <div className="col-span-2 text-xs text-white/60 flex justify-between bg-black/30 border border-white/10 p-2 rounded-md mt-1">
             <span>Wallet:</span>
             <span className="text-[#15BFFD]">
-              {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ""}
+              {/* Show Wagmi Address immediately (faster than context) */}
+              {wagmiAddress
+                ? `${wagmiAddress.slice(0, 6)}...${wagmiAddress.slice(-4)}`
+                : "Not Connected"}
             </span>
           </div>
 
@@ -196,8 +204,12 @@ export function BuyTicketpop({ onClose }) {
             <input
               type="number"
               min="1"
+              max={maxTicketPerUser || 100}
               value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setAmount(val > 0 ? val : 1);
+              }}
               className="px-3 py-2 rounded-md bg-black/40 border border-white/10 text-sm"
             />
           </div>
@@ -233,10 +245,21 @@ export function BuyTicketpop({ onClose }) {
         {/* Buy Button */}
         <button
           onClick={handleBuy}
-          disabled={loading}
-          className="w-full mt-4 py-2.5 rounded-full bg-[#090D2D] border border-white/10 text-sm hover:scale-105 active:scale-95 transition-all relative"
+          disabled={loading || !contracts?.lottery}
+          className={`w-full mt-4 py-2.5 rounded-full text-sm transition-all relative border border-white/10 
+            ${
+              loading || !contracts?.lottery
+                ? "bg-gray-700 cursor-not-allowed"
+                : "bg-[#090D2D] hover:scale-105 active:scale-95"
+            }`}
         >
-          {loading ? "Processing..." : "Buy Now"}
+          {loading
+            ? "Processing..."
+            : !contracts?.lottery
+            ? "Loading Contract..."
+            : isConnected && !contextAddress
+            ? "Syncing Wallet..."
+            : "Buy Now"}
         </button>
       </div>
     </div>
