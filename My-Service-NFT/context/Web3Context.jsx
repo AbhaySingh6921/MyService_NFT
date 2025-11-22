@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { ethers } from "ethers";
 import Toast from "../src/components/Toast.jsx";
-import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 
 import {
   lotteryAddress,
@@ -16,14 +15,13 @@ import {
 import {
   useAccount,
   useWalletClient,
-  usePublicClient, // ⭐ Added this
   WagmiConfig,
   configureChains,
   createConfig,
 } from "wagmi";
 
 import { sepolia } from "wagmi/chains";
-// import { publicProvider } from "wagmi/providers/public";
+import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 
 // RainbowKit
 import {
@@ -36,12 +34,13 @@ import {
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 
+// ------------------------------
 const projectId = "bf59cafc9ab6aee1a645b92a22cf252e";
 
 // ------------------------------
-//  WAGMI CONFIG
+// WAGMI CONFIG
 // ------------------------------
-const { chains, publicClient: wagmiPublicClient } = configureChains(
+const { chains, publicClient } = configureChains(
   [sepolia],
   [
     jsonRpcProvider({
@@ -63,7 +62,7 @@ const connectors = connectorsForWallets([
           projectId,
           metadata: {
             name: "myservicenft",
-            description: "NFT Lottery Dapp",
+            description: "NFT Lottery",
             url: "https://my-service-nft.vercel.app",
             icons: ["https://my-service-nft.vercel.app/icon.png"],
           },
@@ -75,7 +74,7 @@ const connectors = connectorsForWallets([
         chains,
         metadata: {
           name: "myservicenft",
-          description: "NFT Lottery Dapp",
+          description: "NFT Lottery",
           url: "https://my-service-nft.vercel.app",
           icons: ["https://my-service-nft.vercel.app/icon.png"],
         },
@@ -84,89 +83,76 @@ const connectors = connectorsForWallets([
   },
 ]);
 
-
 const wagmiConfig = createConfig({
   autoConnect: true,
   connectors,
-  publicClient: wagmiPublicClient,
+  publicClient,
 });
 
-// ------------------------------
+// -----------------------------------------------------------------------------
 const Web3Context = createContext();
 export const useWeb3 = () => useContext(Web3Context);
+// -----------------------------------------------------------------------------
 
-// ------------------------------
 function Web3Provider({ children }) {
   const { address: wagmiAddress, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient(); // ⭐ Get public provider for reading data
 
   const [address, setAddress] = useState(null);
-  
-  // ⭐ Initialize with NULL, but we will load Read-Only immediately
   const [contracts, setContracts] = useState({ lottery: null, nft: null });
   const [notifications, setNotifications] = useState([]);
 
   const notify = (msg) => setNotifications((p) => [...p, msg]);
 
   // ----------------------------------------
-  // 1. INITIALIZE READ-ONLY CONTRACTS (Shows data even if not connected)
+  // LOAD SIGNER WHEN WALLET CONNECTS
   // ----------------------------------------
   useEffect(() => {
-    // If we already have a signer (write access), don't downgrade to read-only
-    if (address && contracts.lottery && contracts.lottery.runner) return;
+    async function loadSigner() {
+      if (!isConnected || !walletClient) return;
 
-    const provider = new ethers.JsonRpcProvider("https://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO"); // or use publicClient
-    
-    const readLottery = new ethers.Contract(lotteryAddress, lotteryAbi, provider);
-    const readNft = new ethers.Contract(nftAddress, nftAbi, provider);
+      setAddress(wagmiAddress);
 
-    console.log("📢 Loaded Read-Only Contracts");
-    setContracts({ lottery: readLottery, nft: readNft });
-  }, []); // Run once on mount
+      // ★ Correct provider for MetaMask Mobile + WalletConnect
+      const provider = new ethers.BrowserProvider(walletClient);
+      const signer = await provider.getSigner();
+
+      setContracts({
+        lottery: new ethers.Contract(lotteryAddress, lotteryAbi, signer),
+        nft: new ethers.Contract(nftAddress, nftAbi, signer),
+      });
+    }
+
+    loadSigner();
+  }, [isConnected, walletClient, wagmiAddress]);
 
   // ----------------------------------------
-  // 2. UPGRADE TO SIGNER (WRITE ACCESS) WHEN CONNECTED
+  // LOAD READ-ONLY CONTRACTS FIRST (NO SIGNER)
   // ----------------------------------------
   useEffect(() => {
-  async function loadSigner() {
-    if (!isConnected || !walletClient) return;
+    if (contracts.lottery) return;
 
-    setAddress(wagmiAddress);
-
-    // FIX: Use walletClient.transport instead of walletClient
-    const provider = new ethers.BrowserProvider(walletClient.transport);
-
-    const signer = await provider.getSigner();
+    const provider = new ethers.JsonRpcProvider(
+      "https://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO"
+    );
 
     setContracts({
-      lottery: new ethers.Contract(lotteryAddress, lotteryAbi, signer),
-      nft: new ethers.Contract(nftAddress, nftAbi, signer),
+      lottery: new ethers.Contract(lotteryAddress, lotteryAbi, provider),
+      nft: new ethers.Contract(nftAddress, nftAbi, provider),
     });
-  }
-
-  loadSigner();
-}, [isConnected, walletClient, wagmiAddress]);
-
+  }, []);
 
   // ----------------------------------------
   // BUY TICKET
   // ----------------------------------------
   const buyTicket = async (amount = 1) => {
     try {
-      if (!address || !contracts.lottery) {
-        notify("⚠ Wallet not fully loaded yet");
-        return { success: false };
-      }
-
-      // Check if we have a signer (runner)
       if (!contracts.lottery.runner) {
-        notify("⚠ Read-only mode. Please reconnect wallet.");
+        notify("⚠ Connect your wallet first");
         return { success: false };
       }
 
       const tx = await contracts.lottery.buyTickets(amount);
-      notify("⏳ Transaction Sent...");
       await tx.wait();
       notify("🎉 Ticket Purchased!");
       return { success: true };
@@ -178,36 +164,37 @@ function Web3Provider({ children }) {
   };
 
   // ----------------------------------------
-  // LOTTERY INFO (Works with Read-Only or Signer)
+  // LOTTERY INFO
   // ----------------------------------------
   const getLotteryInfo = async () => {
-    if (!contracts.lottery) return null;
     try {
-      // Simple read calls work with both Provider and Signer
-      const [status, totalSold, ticketPrice, maxTickets] = await Promise.all([
-        contracts.lottery.getLotteryStatus(),
-        contracts.lottery.getTotalTicketsSold(),
-        contracts.lottery.ticketPrice(),
-        contracts.lottery.maxTickets(),
+      const c = contracts.lottery;
+      if (!c) return null;
+
+      const [status, sold, price, max] = await Promise.all([
+        c.getLotteryStatus(),
+        c.getTotalTicketsSold(),
+        c.ticketPrice(),
+        c.maxTickets(),
       ]);
 
       return {
         status,
-        totalSold: Number(totalSold),
-        maxTickets: Number(maxTickets),
-        ticketPrice: ethers.formatUnits(ticketPrice, 6),
+        totalSold: Number(sold),
+        maxTickets: Number(max),
+        ticketPrice: ethers.formatUnits(price, 6),
       };
-    } catch (error) {
-      console.error("Error fetching lottery info:", error);
+    } catch (e) {
       return null;
     }
   };
-
   const getMsaAgreement = async () => {
     try {
       if (!contracts.lottery) return null;
-      return await contracts.lottery.getMsaURI();
-    } catch {
+      const msaUri = await contracts.lottery.getMsaURI();
+      return msaUri;
+    } catch (err) {
+      console.error("MSA Fetch Error:", err);
       return null;
     }
   };
@@ -219,9 +206,9 @@ function Web3Provider({ children }) {
         contracts,
         buyTicket,
         getLotteryInfo,
-        getMsaAgreement,
-        notifications,
         notify,
+        notifications,
+        getMsaAgreement,
       }}
     >
       {children}
@@ -239,7 +226,7 @@ function Web3Provider({ children }) {
   );
 }
 
-// ------------------------------
+// -----------------------------------------------------------------------------
 export function Web3ProviderWrapper({ children }) {
   return (
     <WagmiConfig config={wagmiConfig}>

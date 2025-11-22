@@ -1,311 +1,268 @@
-
-import React, { useState ,useEffect} from "react";
+import React, { useState, useEffect } from "react";
 
 import HeroButton from "./components/HeroButton";
-
 import ProfileCard from "./components/ProfileCard";
 import CountdownTimer from "./components/CountdownTimer";
 import ProgressBar from "./components/ProgressBar";
 import ServiceCard from "./components/ServiceCard";
 import Agreement from "./components/Agreement";
 import BuyTicketpop from "./components/BuyTicketpop.jsx";
-import { useWeb3 } from "../context/Web3Context";
-import { useNavigate } from "react-router-dom";
+
 import ParticipantsPopup from "./components/ParticipantsPopup.jsx";
 import TicketsPopup from "./components/TicketsPopup.jsx";
 import ServicePopup from "./components/ServicePopup.jsx";
+
+import { useWeb3 } from "../context/Web3Context";
+import { useNavigate } from "react-router-dom";
+
 import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
-
-
-
-
-
+import { useAccount } from "wagmi";   // ⭐ Very important
 
 
 const App = () => {
-    //smart contracts integration 
-    const {buyTicket,address,getLotteryInfo,contracts}=useWeb3();
-    const { openConnectModal } = useConnectModal();
-    const [showBuyPopup, setShowBuyPopup] = useState(false);
-    const [lotteryData, setLotteryData] = useState(null);
-    const [showParticipants, setShowParticipants] = useState(false);
-    const [showTicketsPopup, setShowTicketsPopup] = useState(false);
-    const [showServicePopup, setShowServicePopup] = useState(false);
-    const [servicePopupData, setServicePopupData] = useState(null);
-    const [connecting, setConnecting] = useState(false);
+  // Wagmi account (instant)
+  const { address: wagmiAddress, isConnected } = useAccount();
 
-    const navigate = useNavigate();
+  // Your Web3 context data (slightly delayed on mobile)
+  const { address, getLotteryInfo, contracts } = useWeb3();
+  const { openConnectModal } = useConnectModal();
 
-    const dummyLotteryData = {
-  maxTickets: 1000,
-  totalSold: 450,
-};
+  // UI states
+  const [showBuyPopup, setShowBuyPopup] = useState(false);
+  const [lotteryData, setLotteryData] = useState(null);
 
+  const [showParticipants, setShowParticipants] = useState(false);
+  const [showTicketsPopup, setShowTicketsPopup] = useState(false);
+  const [showServicePopup, setShowServicePopup] = useState(false);
+  const [servicePopupData, setServicePopupData] = useState(null);
 
+  const navigate = useNavigate();
 
-    //for loterry data fetch 
-useEffect(() => {
-  if (!address || !contracts.lottery) return;
-
-  const load = async () => {
-    const data = await getLotteryInfo();
-    setLotteryData(data);
+  // Dummy fallback
+  const dummyLotteryData = {
+    maxTickets: 1000,
+    totalSold: 450,
   };
 
-  load();
-}, [address, contracts]);
-   // <- depends on wallet, NOT getLotteryInfo
+  // ----------------------------
+  // ⭐ LOAD BLOCKCHAIN DATA
+  // ----------------------------
+  useEffect(() => {
+    if (!isConnected) return;          // wagmi → connected instantly
+    if (!contracts?.lottery) return;   // signer ready
+    if (!address) return;              // context synced
 
+    const load = async () => {
+      const data = await getLotteryInfo();
+      setLotteryData(data);
+    };
 
-//service card click handler
-const handleServiceClick = (data) => {
-  setServicePopupData(data);
-  setShowServicePopup(true);
-};
-// ----Service Card Info----
+    load();
+  }, [isConnected, address, contracts]);
 
+  // ----------------------------
+  // Service Popup
+  // ----------------------------
+  const handleServiceClick = (data) => {
+    setServicePopupData(data);
+    setShowServicePopup(true);
+  };
 
+  // Service Card Info
   const serviceData = [
-  {
-    imageUrl: "/serviceCards/Professional&Web3Services.png",
-    title: "Professional & Web3 Services",
-    subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
-    driveLink: "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view?usp=drivesdk ",
-  },
-  {
-    imageUrl: "/serviceCards/DR_AIDAN_WELLNECY.png",
-    title: "DR_AIDAN_WELLNECY",
-    subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
-    driveLink: "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view?usp=drivesdk ",
-  },
-  {
-    imageUrl: "/serviceCards/Personal&Domestic.png",
-    title: "Personal & Domestic",
-    subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
-    driveLink: "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view?usp=drivesdk ",
-  },
-];
-
+    {
+      imageUrl: "/serviceCards/Professional&Web3Services.png",
+      title: "Professional & Web3 Services",
+      subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
+      driveLink: "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view?usp=drivesdk",
+    },
+    {
+      imageUrl: "/serviceCards/DR_AIDAN_WELLNECY.png",
+      title: "DR_AIDAN_WELLNECY",
+      subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
+      driveLink: "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view?usp=drivesdk",
+    },
+    {
+      imageUrl: "/serviceCards/Personal&Domestic.png",
+      title: "Personal & Domestic",
+      subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
+      driveLink: "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view?usp=drivesdk",
+    },
+  ];
 
   return (
     <div className="pageWrapper">
       <div className="bgGradientBlob blob1"></div>
       <div className="bgGradientBlob blob2"></div>
+
+      {/* Profile + Countdown */}
       <div className="profileAndCountdown flex w-[86vw] justify-between">
-        {/* ----Profile Card (Desktop & Tab verison)---- */}
         <ProfileCard
           userImage={"/dummyProfile.png"}
           userName={"Emerson Philips"}
-           portfolioLink="https://your-portfolio-link.com"
-        ></ProfileCard>
-        {/* ----Remaining Tickets Instead of Countdown---- */}
-        {/* ----Remaining Tickets / Info ---- */}
-      <div
-  className="
-    text-sm 
-    font-medium
-    text-transparent 
-    bg-clip-text
-  "
-  style={{
-    backgroundImage: "linear-gradient(90deg, #15BFFD, #9C37FD)",
-    WebkitBackgroundClip: "text",
-  }}
->
-  🎟️ Raffle ends when 1000 tickets are sold.
-</div>
-
-
-  
-
-
-        </div>
-
-      {/* ----Heading---- */}
-      <h1>
-        <span>Win 10 Years of</span> Exclusive Time & Service
-      </h1>
-      <p className="subHeading">
-        The World’s First NFT Backed by 31,320 Hours of Real Human Time
-        I’m offering 10 years (31,320 hours) of my time as a single NFT, available through a raffle lottery.
-        Whoever wins the NFT gets exclusive access to 200+ services — personal, domestic, professional, farming, and even emergency health-support donations.
-        The NFT is fully transferable and can be resold anytime.
-      </p>
-
-      {/* ----Hero Buttons---- */}
-      <div className="flex gap-[24px] mt-[27px]">
-      <ConnectButton.Custom>
-  {({
-    account,
-    chain,
-    openConnectModal,
-    openAccountModal,
-  }) => {
-    return (
-      <HeroButton onClick={account ? openAccountModal : openConnectModal}>
-        {account ? "Connected" : "Connect Wallet"}
-      </HeroButton>
-    );
-  }}
-</ConnectButton.Custom>
-
-
-
-          
-
-
-
-         {/* Buy Ticket Button */}
-      <HeroButton
-          toLink="/buyticket"
-          onClick={async () => {
-            if (!address) {
-              // ⭐ FIXED: Use openConnectModal provided by RainbowKit
-              if (openConnectModal) {
-                openConnectModal();
-              }
-              return;
-            }
-            navigate("/buyticket");
-            setShowBuyPopup(true);
-          }}
-        >
-          Buy Tickets
-        </HeroButton>
-
-
-
-      {/* Popup Modal */}
-      {showBuyPopup && (
-        <BuyTicketpop 
-            onClose={() => {
-            setShowBuyPopup(false);
-            navigate("/");   // ⭐ redirect to home page
-         }}
+          portfolioLink="https://your-portfolio-link.com"
         />
 
-
-      )}
-
-       
-
-    {/* Participants Popup */}
-      <HeroButton
-  toLink="/participants"
-  variant="link"
-  onClick={() => {
-    navigate("/participants");
-    setShowParticipants(true);
-  }}
->
-  Participants
-</HeroButton>
-{showParticipants && (
-  <ParticipantsPopup
-    onClose={() => {
-      setShowParticipants(false);
-      navigate("/");
-    }}
-  />
-)}
-
-        
-      </div>
-
-     
-       {/*your ticket*/}
-       <HeroButton
-  toLink=""
-  variant="link"
-  onClick={() => {
-    navigate(`/tickets/${address}`);   // route update
-    setShowTicketsPopup(true);         // show popup
-  }}
->
-  Your Tickets
-</HeroButton>
-
-{showTicketsPopup && (
-  <TicketsPopup
-    onClose={() => {
-      setShowTicketsPopup(false);      // ❗ FIXED
-      navigate("/");                   // back to home
-    }}
-  />
-)}
-      
-
-       
-
-       
-
-      
-
-      {/* ----Clock Image---- */}
-      <img className="clockImage" src="/clockImage.png" alt="" />
-
-      {/* ----Profile and Countdown (Mobile version)---- */}
-      <div className="profileAndCountdownMobile">
-        <ProfileCard
-          userImage={"/dummyProfile.png"}
-          userName={"Emerson Philips"}
-          units={3.2}
-        ></ProfileCard>
         <div
-            className="
-            text-sm 
-            font-medium
-            text-transparent 
-            bg-clip-text
-          "
+          className="text-sm font-medium text-transparent bg-clip-text"
           style={{
             backgroundImage: "linear-gradient(90deg, #15BFFD, #9C37FD)",
             WebkitBackgroundClip: "text",
           }}
         >
-           🎟️ Raffle ends when all tickets are sold.
+          🎟️ Raffle ends when 1000 tickets are sold.
         </div>
-        </div>
+      </div>
 
-      {/* ----Lottery Details Section---- */}
+      {/* Heading */}
+      <h1>
+        <span>Win 10 Years of</span> Exclusive Time & Service
+      </h1>
+
+      <p className="subHeading">
+        The World’s First NFT Backed by 31,320 Hours of Real Human Time...
+      </p>
+
+      {/* Hero Buttons */}
+      <div className="flex gap-[24px] mt-[27px]">
+
+        {/* ⭐ RainbowKit Connect Button */}
+        <ConnectButton.Custom>
+          {({ account, openConnectModal, openAccountModal }) => {
+            return (
+              <HeroButton onClick={account ? openAccountModal : openConnectModal}>
+                {account ? "Connected" : "Connect Wallet"}
+              </HeroButton>
+            );
+          }}
+        </ConnectButton.Custom>
+
+        {/* Buy Ticket */}
+        <HeroButton
+          toLink="/buyticket"
+          onClick={() => {
+            if (!isConnected) {
+              openConnectModal();
+              return;
+            }
+            setShowBuyPopup(true);
+            navigate("/buyticket");
+          }}
+        >
+          Buy Tickets
+        </HeroButton>
+
+        {/* Buy Popup */}
+        {showBuyPopup && (
+          <BuyTicketpop
+            onClose={() => {
+              setShowBuyPopup(false);
+              navigate("/");
+            }}
+          />
+        )}
+
+        {/* Participants */}
+        <HeroButton
+          toLink="/participants"
+          variant="link"
+          onClick={() => {
+            setShowParticipants(true);
+            navigate("/participants");
+          }}
+        >
+          Participants
+        </HeroButton>
+
+        {showParticipants && (
+          <ParticipantsPopup
+            onClose={() => {
+              setShowParticipants(false);
+              navigate("/");
+            }}
+          />
+        )}
+      </div>
+
+      {/* Your Tickets */}
+      <HeroButton
+        variant="link"
+        onClick={() => {
+          if (!address) return openConnectModal();
+          setShowTicketsPopup(true);
+          navigate(`/tickets/${address}`);
+        }}
+      >
+        Your Tickets
+      </HeroButton>
+
+      {showTicketsPopup && (
+        <TicketsPopup
+          onClose={() => {
+            setShowTicketsPopup(false);
+            navigate("/");
+          }}
+        />
+      )}
+
+      {/* Clock */}
+      <img className="clockImage" src="/clockImage.png" alt="" />
+
+      {/* Mobile Profile */}
+      <div className="profileAndCountdownMobile">
+        <ProfileCard userImage={"/dummyProfile.png"} userName={"Emerson Philips"} units={3.2} />
+
+        <div
+          className="text-sm font-medium text-transparent bg-clip-text"
+          style={{
+            backgroundImage: "linear-gradient(90deg, #15BFFD, #9C37FD)",
+            WebkitBackgroundClip: "text",
+          }}
+        >
+          🎟️ Raffle ends when all tickets are sold.
+        </div>
+      </div>
+
+      {/* Lottery Details */}
       <section className="lotteryDetails">
         <h2 className="mb-[12px]">Lottery Details</h2>
 
         <ProgressBar
-  current={address ? lotteryData?.totalSold : dummyLotteryData.totalSold}
-  total={address ? lotteryData?.maxTickets : dummyLotteryData.maxTickets}
-/>
+          current={
+            isConnected && lotteryData
+              ? lotteryData.totalSold
+              : dummyLotteryData.totalSold
+          }
+          total={
+            isConnected && lotteryData
+              ? lotteryData.maxTickets
+              : dummyLotteryData.maxTickets
+          }
+        />
+      </section>
 
-       </section>
-
-
-      {/* ----Service Section---- */}
+      {/* Services */}
       <section className="serviceProviderProfile">
         <h2>Service Provider Profile</h2>
 
         <div className="serviceGrid mt-[40px]">
-          {serviceData.map((item, index) => (
-  <ServiceCard
-    key={index}
-    id={index + 1}
-    title={item.title}
-    subtitle={item.subTitle}
-    image={item.imageUrl}
-    onServiceClick={() => handleServiceClick(item)}
-  // ⭐ passed to child
-  />
-))}
+          {serviceData.map((item, i) => (
+            <ServiceCard
+              key={i}
+              id={i + 1}
+              title={item.title}
+              subtitle={item.subTitle}
+              image={item.imageUrl}
+              onServiceClick={() => handleServiceClick(item)}
+            />
+          ))}
 
-
-
-{showServicePopup && (
-  <ServicePopup
-    data={servicePopupData}
-    onClose={() => setShowServicePopup(false)}
-  />
-)}
-
-
+          {showServicePopup && (
+            <ServicePopup
+              data={servicePopupData}
+              onClose={() => setShowServicePopup(false)}
+            />
+          )}
 
           <div className="agreementWrapperMain">
             <Agreement
@@ -315,20 +272,16 @@ const handleServiceClick = (data) => {
                 "Non-Transferable",
                 "Safety-First Policy",
               ]}
-            ></Agreement>
-            {/* Footer */}
-            <p className="mt-6 text-center text-white/70 text-sm tracking-wide">
-  If you have any questions, feel free to contact me on{" "}
-  <span className="text-blue-400">LinkedIn</span> or{" "}
-  <span className="text-green-400">WhatsApp</span>.
-</p>
+            />
 
+            <p className="mt-6 text-center text-white/70 text-sm tracking-wide">
+              Questions? Contact me on <span className="text-blue-400">LinkedIn</span> or{" "}
+              <span className="text-green-400">WhatsApp</span>.
+            </p>
           </div>
-          
         </div>
       </section>
-  
-</div>
+    </div>
   );
 };
 
