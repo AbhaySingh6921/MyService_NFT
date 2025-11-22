@@ -56,11 +56,34 @@ const connectors = connectorsForWallets([
   {
     groupName: "Recommended",
     wallets: [
-      metaMaskWallet({ projectId, chains }),
-      walletConnectWallet({ projectId, chains }),
+      metaMaskWallet({
+        projectId,
+        chains,
+        walletConnectOptions: {
+          projectId,
+          metadata: {
+            name: "myservicenft",
+            description: "NFT Lottery Dapp",
+            url: "https://my-service-nft.vercel.app",
+            icons: ["https://my-service-nft.vercel.app/icon.png"],
+          },
+        },
+      }),
+
+      walletConnectWallet({
+        projectId,
+        chains,
+        metadata: {
+          name: "myservicenft",
+          description: "NFT Lottery Dapp",
+          url: "https://my-service-nft.vercel.app",
+          icons: ["https://my-service-nft.vercel.app/icon.png"],
+        },
+      }),
     ],
   },
 ]);
+
 
 const wagmiConfig = createConfig({
   autoConnect: true,
