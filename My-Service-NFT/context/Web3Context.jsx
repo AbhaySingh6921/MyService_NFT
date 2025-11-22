@@ -106,31 +106,25 @@ function Web3Provider({ children }) {
   // 2. UPGRADE TO SIGNER (WRITE ACCESS) WHEN CONNECTED
   // ----------------------------------------
   useEffect(() => {
-    async function loadSigner() {
-      if (!isConnected || !walletClient) {
-        setAddress(null);
-        return;
-      }
+  async function loadSigner() {
+    if (!isConnected || !walletClient) return;
 
-      try {
-        setAddress(wagmiAddress);
+    setAddress(wagmiAddress);
 
-        // Convert Wagmi Client to Ethers Signer
-        const provider = new ethers.BrowserProvider(walletClient);
-        const signer = await provider.getSigner();
+    // FIX: Use walletClient.transport instead of walletClient
+    const provider = new ethers.BrowserProvider(walletClient.transport);
 
-        const writeLottery = new ethers.Contract(lotteryAddress, lotteryAbi, signer);
-        const writeNft = new ethers.Contract(nftAddress, nftAbi, signer);
+    const signer = await provider.getSigner();
 
-        console.log("✅ Wallet Connected: Loaded Signer Contracts");
-        setContracts({ lottery: writeLottery, nft: writeNft });
-      } catch (error) {
-        console.error("Error loading signer:", error);
-      }
-    }
+    setContracts({
+      lottery: new ethers.Contract(lotteryAddress, lotteryAbi, signer),
+      nft: new ethers.Contract(nftAddress, nftAbi, signer),
+    });
+  }
 
-    loadSigner();
-  }, [isConnected, walletClient, wagmiAddress]);
+  loadSigner();
+}, [isConnected, walletClient, wagmiAddress]);
+
 
   // ----------------------------------------
   // BUY TICKET

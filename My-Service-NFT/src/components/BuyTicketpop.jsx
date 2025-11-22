@@ -5,16 +5,17 @@ import { useWeb3 } from "../../context/Web3Context";
 import { ethers } from "ethers";
 import axios from "axios";
 
-// RainbowKit & Wagmi
+// ⭐ RainbowKit & Wagmi imports
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { useAccount } from "wagmi"; // ⭐ Import this for instant status
+import { useAccount } from "wagmi"; 
 
 export function BuyTicketpop({ onClose }) {
+  // contextAddress = the address inside your Web3Provider (Slow on mobile)
   const { buyTicket, contracts, address: contextAddress, notify } = useWeb3();
-  const { openConnectModal } = useConnectModal();
   
-  // ⭐ Use Wagmi for instant UI updates on Mobile
+  // wagmiAddress/isConnected = Raw status from the wallet (Instant on mobile)
   const { address: wagmiAddress, isConnected } = useAccount();
+  const { openConnectModal } = useConnectModal();
 
   const [amount, setAmount] = useState(1);
   const [pricePerTicket, setPricePerTicket] = useState(0);
@@ -30,14 +31,14 @@ export function BuyTicketpop({ onClose }) {
   const remainingTickets = maxTickets - totalSold;
 
   // -----------------------------------------------------------
-  // LOAD DATA (Prices/Limits)
+  // LOAD DATA
   // -----------------------------------------------------------
   useEffect(() => {
     const fetchPrice = async () => {
+      // Check contracts.lottery exists (Read-only is fine)
       if (!contracts?.lottery) return;
 
       try {
-        // Parallel fetch for speed
         const [priceWei, maxUser, maxTix, sold] = await Promise.all([
           contracts.lottery.ticketPrice(),
           contracts.lottery.maxTicketsPerUser(),
@@ -45,7 +46,7 @@ export function BuyTicketpop({ onClose }) {
           contracts.lottery.getTotalTicketsSold(),
         ]);
 
-        const price = Number(ethers.formatUnits(priceWei, 6)); // Assumes USDC (6 decimals)
+        const price = Number(ethers.formatUnits(priceWei, 6));
 
         setPricePerTicket(price);
         setMaxTicketPerUser(Number(maxUser));
@@ -58,29 +59,29 @@ export function BuyTicketpop({ onClose }) {
     };
 
     fetchPrice();
-  }, [contracts, amount]); // Removed 'address' dependency to allow read-only fetch
+  }, [contracts, amount]);
 
-  // Recalculate total when amount changes
   useEffect(() => {
     setTotal(pricePerTicket * amount);
   }, [amount, pricePerTicket]);
 
   // -----------------------------------------------------------
-  // BUY TICKET
+  // 🔥 FIX: HANDLE BUY
   // -----------------------------------------------------------
   const handleBuy = async () => {
     try {
-      // 1. Check connection via Wagmi (Instant)
+      // 1. FIRST check purely if Wallet is connected (Instant check)
       if (!isConnected) {
         notify("⚠ Please connect your wallet first.");
         if (openConnectModal) openConnectModal();
         return;
       }
 
-      // 2. Check if Context has finished loading the Signer
+      // 2. SECOND check if our App Context has finished loading the signer
+      // This prevents the "Connect Again" loop. We just tell them to wait.
       if (!contextAddress) {
-        notify("⏳ Wallet syncing... Please wait 2 seconds.");
-        return;
+        notify("⏳ Wallet syncing... Please click Buy again in 2 seconds.");
+        return; 
       }
 
       if (!name || !email) {
@@ -90,16 +91,15 @@ export function BuyTicketpop({ onClose }) {
 
       setLoading(true);
 
-      // 3. Execute Buy
+      // 3. Perform Buy
       const tx = await buyTicket(amount);
 
       if (!tx || !tx.success) {
-        // notify handled in context usually, but just in case:
         setLoading(false);
         return;
       }
 
-      // 4. Backend Sync
+      // 4. Update Database
       await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
         name,
         email,
@@ -132,7 +132,6 @@ export function BuyTicketpop({ onClose }) {
             "0 0 12px rgba(21,191,253,0.2), inset 0 0 8px rgba(156,55,253,0.15)",
         }}
       >
-        {/* Close */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-white/70 hover:text-white text-lg"
@@ -151,7 +150,7 @@ export function BuyTicketpop({ onClose }) {
           Buy Tickets
         </h2>
 
-        {/* Wallet Warning */}
+        {/* Wallet Warning - Uses isConnected (Instant) */}
         {!isConnected && (
           <div className="mb-4 text-center text-sm text-red-400">
             ⚠ Wallet not connected
@@ -165,7 +164,6 @@ export function BuyTicketpop({ onClose }) {
           </div>
         )}
 
-        {/* FORM */}
         <div className="grid grid-cols-2 gap-3 w-full">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-white/60">Name</label>
@@ -192,7 +190,7 @@ export function BuyTicketpop({ onClose }) {
           <div className="col-span-2 text-xs text-white/60 flex justify-between bg-black/30 border border-white/10 p-2 rounded-md mt-1">
             <span>Wallet:</span>
             <span className="text-[#15BFFD]">
-              {/* Show Wagmi Address immediately (faster than context) */}
+              {/* Uses wagmiAddress (Instant) so user sees address immediately */}
               {wagmiAddress
                 ? `${wagmiAddress.slice(0, 6)}...${wagmiAddress.slice(-4)}`
                 : "Not Connected"}
@@ -222,7 +220,6 @@ export function BuyTicketpop({ onClose }) {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="flex justify-between items-center mt-3 px-1 text-[11px]">
           <div className="flex flex-col items-center">
             <span className="text-white/50">Max/User</span>
@@ -242,7 +239,6 @@ export function BuyTicketpop({ onClose }) {
           </div>
         </div>
 
-        {/* Buy Button */}
         <button
           onClick={handleBuy}
           disabled={loading || !contracts?.lottery}
@@ -258,7 +254,7 @@ export function BuyTicketpop({ onClose }) {
             : !contracts?.lottery
             ? "Loading Contract..."
             : isConnected && !contextAddress
-            ? "Syncing Wallet..."
+            ? "Syncing Wallet..." // User sees this instead of loop
             : "Buy Now"}
         </button>
       </div>
