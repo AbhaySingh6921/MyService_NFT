@@ -9,7 +9,7 @@ import "./index.css";
 import "./polyfills";
 
 createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
+ 
     <BrowserRouter>
     <Web3ProviderWrapper>
       
@@ -17,5 +17,5 @@ createRoot(document.getElementById("root")).render(
       
     </Web3ProviderWrapper>
     </BrowserRouter>
-  </React.StrictMode>
+  
 );
