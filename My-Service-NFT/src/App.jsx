@@ -70,19 +70,19 @@ const handleServiceClick = (data) => {
     imageUrl: "/serviceCards/Professional&Web3Services.png",
     title: "Professional & Web3 Services",
     subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
-    driveLink: "https://drive.google.com/drive/u/0/folders/1pPb6BYuB503bVSEOKlCdPeHG-MZfdC5d",
+    driveLink: "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view?usp=drivesdk ",
   },
   {
     imageUrl: "/serviceCards/DR_AIDAN_WELLNECY.png",
     title: "DR_AIDAN_WELLNECY",
     subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
-    driveLink: "https://drive.google.com/yourfile2",
+    driveLink: "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view?usp=drivesdk ",
   },
   {
     imageUrl: "/serviceCards/Personal&Domestic.png",
     title: "Personal & Domestic",
     subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
-    driveLink: "https://drive.google.com/yourfile3",
+    driveLink: "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view?usp=drivesdk ",
   },
 ];
 
@@ -112,7 +112,7 @@ const handleServiceClick = (data) => {
     WebkitBackgroundClip: "text",
   }}
 >
-  🎟️ Raffle ends when all tickets are sold.
+  🎟️ Raffle ends when 1000 tickets are sold.
 </div>
 
 
@@ -126,9 +126,10 @@ const handleServiceClick = (data) => {
         <span>Win 10 Years of</span> Exclusive Time & Service
       </h1>
       <p className="subHeading">
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
-        tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-        veniam, quis nostrud exercitation ullamco.
+        The World’s First NFT Backed by 31,320 Hours of Real Human Time
+        I’m offering 10 years (31,320 hours) of my time as a single NFT, available through a raffle lottery.
+        Whoever wins the NFT gets exclusive access to 200+ services — personal, domestic, professional, farming, and even emergency health-support donations.
+        The NFT is fully transferable and can be resold anytime.
       </p>
 
       {/* ----Hero Buttons---- */}
@@ -251,21 +252,20 @@ const handleServiceClick = (data) => {
           units={3.2}
         ></ProfileCard>
         <div
-  className="
-    text-sm 
-    font-medium
-    text-transparent 
-    bg-clip-text
-  "
-  style={{
-    backgroundImage: "linear-gradient(90deg, #15BFFD, #9C37FD)",
-    WebkitBackgroundClip: "text",
-  }}
->
-  🎟️ Raffle ends when all tickets are sold.
-</div>
-
-      </div>
+            className="
+            text-sm 
+            font-medium
+            text-transparent 
+            bg-clip-text
+          "
+          style={{
+            backgroundImage: "linear-gradient(90deg, #15BFFD, #9C37FD)",
+            WebkitBackgroundClip: "text",
+          }}
+        >
+           🎟️ Raffle ends when all tickets are sold.
+        </div>
+        </div>
 
       {/* ----Lottery Details Section---- */}
       <section className="lotteryDetails">
@@ -316,10 +316,19 @@ const handleServiceClick = (data) => {
                 "Safety-First Policy",
               ]}
             ></Agreement>
+            {/* Footer */}
+            <p className="mt-6 text-center text-white/70 text-sm tracking-wide">
+  If you have any questions, feel free to contact me on{" "}
+  <span className="text-blue-400">LinkedIn</span> or{" "}
+  <span className="text-green-400">WhatsApp</span>.
+</p>
+
           </div>
+          
         </div>
       </section>
-    </div>
+  
+</div>
   );
 };
 

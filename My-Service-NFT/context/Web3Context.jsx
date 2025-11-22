@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { ethers } from "ethers";
 import Toast from "../src/components/Toast.jsx";
+import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 
 import {
   lotteryAddress,
@@ -22,7 +23,7 @@ import {
 } from "wagmi";
 
 import { sepolia } from "wagmi/chains";
-import { publicProvider } from "wagmi/providers/public";
+// import { publicProvider } from "wagmi/providers/public";
 
 // RainbowKit
 import {
@@ -42,7 +43,13 @@ const projectId = "bf59cafc9ab6aee1a645b92a22cf252e";
 // ------------------------------
 const { chains, publicClient: wagmiPublicClient } = configureChains(
   [sepolia],
-  [publicProvider()]
+  [
+    jsonRpcProvider({
+      rpc: () => ({
+        http: "https://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO",
+      }),
+    }),
+  ]
 );
 
 const connectors = connectorsForWallets([
@@ -86,7 +93,7 @@ function Web3Provider({ children }) {
     // If we already have a signer (write access), don't downgrade to read-only
     if (address && contracts.lottery && contracts.lottery.runner) return;
 
-    const provider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com"); // or use publicClient
+    const provider = new ethers.JsonRpcProvider("https://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO"); // or use publicClient
     
     const readLottery = new ethers.Contract(lotteryAddress, lotteryAbi, provider);
     const readNft = new ethers.Contract(nftAddress, nftAbi, provider);

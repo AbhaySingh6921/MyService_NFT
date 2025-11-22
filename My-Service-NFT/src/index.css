@@ -150,6 +150,7 @@ h2 {
     grid-template-columns: repeat(2, 337px);
     grid-template-rows: repeat(2, 196px);
   }
+  
 }
 
 @media (min-width: 844px) {
