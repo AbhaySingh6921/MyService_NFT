@@ -42,6 +42,17 @@ const App = () => {
 };
 
 
+useEffect(() => {
+  if (!address) return;
+
+  const already = sessionStorage.getItem("wallet-reloaded");
+
+  if (!already) {
+    sessionStorage.setItem("wallet-reloaded", "true");
+    window.location.reload();
+  }
+  console.log("page reload after wallet connect");
+}, [address]);
 
     //for loterry data fetch 
 useEffect(() => {
