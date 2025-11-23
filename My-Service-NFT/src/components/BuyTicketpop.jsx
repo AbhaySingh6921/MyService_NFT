@@ -69,55 +69,62 @@ export function BuyTicketpop({ onClose }) {
   // 🔥 FIX: HANDLE BUY
   // -----------------------------------------------------------
   const handleBuy = async () => {
-    try {
-      // 1. FIRST check purely if Wallet is connected (Instant check)
-      if (!isConnected) {
-        notify("⚠ Please connect your wallet first.");
-        if (openConnectModal) openConnectModal();
-        return;
-      }
-
-      // 2. SECOND check: Mobile Glitch Fix
-      // If Wagmi says connected, but Context is empty, force a reload to sync.
-      if (isConnected && !contextAddress) {
-        notify("⚠ Syncing wallet... Reloading page.");
-        window.location.reload();
-        return; 
-      }
-
-      if (!name || !email) {
-        notify("⚠ Please fill in your name and email.");
-        return;
-      }
-
-      setLoading(true);
-
-      // 3. Perform Buy (Pass user data for recovery)
-      // Note: Ensure your Web3Context buyTicket function accepts the second argument!
-      const tx = await buyTicket(amount, { name, email });
-
-      if (!tx || !tx.success) {
-        setLoading(false);
-        return;
-      }
-
-      // 4. Update Database (If browser stayed alive)
-      await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
-        name,
-        email,
-        walletAddress: contextAddress.toLowerCase(),
-        amount,
-      });
-
-      notify("🎉 Ticket purchased successfully!");
-      onClose();
-    } catch (err) {
-      console.error("Buy Error:", err);
-      notify("❌ Transaction failed");
-    } finally {
-      setLoading(false);
+  try {
+    // 1. Wallet connection check (Instant)
+    if (!isConnected) {
+      notify("⚠ Please connect your wallet first.");
+      if (openConnectModal) openConnectModal();
+      return;
     }
-  };
+
+    // 2. Mobile hydration fix
+    if (!contextAddress) {
+      notify("⚠ Syncing wallet... Please wait.");
+      return;
+    }
+
+    // 3. Validate form
+    if (!name || !email) {
+      notify("⚠ Please fill in your name and email.");
+      return;
+    }
+
+    setLoading(true);
+
+    // 4. Execute transaction
+    const tx = await buyTicket(amount, { name, email });
+
+    // 5. WAIT for transaction confirmation
+    const receipt = await tx.wait();
+
+    // Correct success check
+    if (!receipt || receipt.status !== 1) {
+      notify("❌ Transaction reverted!");
+      setLoading(false);
+      return;
+    }
+
+    // 6. Update Database after confirmed transaction
+    await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
+      name,
+      email,
+      walletAddress: contextAddress.toLowerCase(),
+      amount,
+         // important!
+    });
+
+    // 7. Show success UI
+    notify("🎉 Ticket purchased successfully!");
+    onClose();
+
+  } catch (err) {
+    console.error("Buy Error:", err);
+    notify("❌ Transaction failed");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // -----------------------------------------------------------
   // UI
