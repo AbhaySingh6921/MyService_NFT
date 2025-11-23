@@ -235,40 +235,48 @@ function Web3Provider({ children }) {
 
  
   const buyTicket = async (amount, userData) => {
-    try {
-      if (!contracts.lottery || !contracts.lottery.runner) {
-        // Force Reload if signer is missing on mobile
-        window.location.reload(); 
-        return { success: false };
-      }
+  try {
+    // ⭐ Retry until signer is ready (mobile fix)
+    let retries = 0;
+    while ((!contracts.lottery || !contracts.lottery.runner) && retries < 10) {
+      await new Promise((r) => setTimeout(r, 500));
+      retries++;
+    }
 
-      const tx = await contracts.lottery.buyTickets(amount);
-      
-      // ⭐ SAVE TO STORAGE IMMEDIATELY (Before App Sleeps)
-      localStorage.setItem("pendingBuy", JSON.stringify({
-        hash: tx.hash,
-        name: userData.name,
-        email: userData.email,
-        amount: amount,
-        wallet: address.toLowerCase()
-      }));
-
-      notify("⏳ Transaction Sent... Please wait.");
-      
-      // Wait for it (might fail if app sleeps, but Recovery System handles it)
-      await tx.wait();
-      
-      // If app didn't sleep, we finish here:
-      localStorage.removeItem("pendingBuy"); // Clear storage since we succeeded
-      notify("🎉 Ticket Purchased!");
-      return { success: true };
-
-    } catch (err) {
-      console.error(err);
-      notify("❌ Transaction failed or rejected");
+    if (!contracts.lottery || !contracts.lottery.runner) {
+      notify("⚠ Wallet not synchronized. Please reconnect.");
       return { success: false };
     }
-  };
+
+    // ⭐ Now transaction will NOT fail randomly anymore
+    const tx = await contracts.lottery.buyTickets(amount);
+
+    localStorage.setItem(
+      "pendingBuy",
+      JSON.stringify({
+        name: userData.name,
+        email: userData.email,
+        amount,
+        wallet: address.toLowerCase(),
+        timestamp: Date.now(),
+      })
+    );
+
+    notify("⏳ Transaction Sent...");
+    await tx.wait();
+
+    notify("🎉 Ticket Purchased!");
+    localStorage.removeItem("pendingBuy");
+
+    return { success: true };
+
+  } catch (err) {
+    console.error("❌ Buy Error:", err);
+    notify("❌ Transaction failed or rejected");
+    return { success: false };
+  }
+};
+
 
   const getLotteryInfo = async () => {
     if (!contracts.lottery) return null;
