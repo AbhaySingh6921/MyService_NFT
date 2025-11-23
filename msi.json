@@ -1,7 +1,7 @@
 {
   "name": "10-Year Service NFT",
   "description": "This NFT certifies a 10-year service agreement. It becomes void if transferred by the original owner.",
-  "image": "https://ipfs.io/ipfs/QmSsYRx3LpDAb1GZQm7zZ1AuHZjfbPkD6J7s9r41xu1mf8",
+  "image": "https://ipfs.io/ipfs/QmXdn1wHx4YooQ4vxZ8ovKUkvrjvHRSGCTbmb94CzRJ7oY",
   "attributes": [
     {
       "trait_type": "Agreement Duration",

@@ -17,7 +17,7 @@ export function BuyTicketpop({ onClose }) {
   const { address: wagmiAddress, isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
 
-  const [amount, setAmount] = useState(1);
+  const [amount, setAmount] = useState(0);
   const [pricePerTicket, setPricePerTicket] = useState(0);
   const [maxTicketPerUser, setMaxTicketPerUser] = useState(0);
   const [maxTickets, setMaxTickets] = useState(0);
@@ -100,6 +100,7 @@ export function BuyTicketpop({ onClose }) {
         setLoading(false);
         return;
       }
+      window.location.reload();
 
       // 4. Update Database (If browser stayed alive)
       await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
@@ -209,9 +210,25 @@ export function BuyTicketpop({ onClose }) {
               max={maxTicketPerUser || 100}
               value={amount}
               onChange={(e) => {
-                const val = Number(e.target.value);
-                setAmount(val > 0 ? val : 1);
-              }}
+              const raw = e.target.value;
+               // Allow empty string (so user can delete)
+              if (raw === "") {
+                setAmount("");
+                return;
+              }
+              const val = Number(raw);
+
+              if (val < 1) {
+                notify("⚠ Minimum 1 ticket required.");
+                return;
+              }
+              if (val > (maxTicketPerUser || 100)){
+                notify(`⚠ Maximum ${maxTicketPerUser || 100} tickets allowed.`);
+                return;
+              }
+              setAmount(val);
+            }}
+
               className="px-3 py-2 rounded-md bg-black/40 border border-white/10 text-sm"
             />
           </div>

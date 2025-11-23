@@ -23,7 +23,7 @@ import {
 } from "wagmi";
 
 import { sepolia } from "wagmi/chains";
-// import { publicProvider } from "wagmi/providers/public";
+
 
 // RainbowKit
 import {
@@ -113,7 +113,7 @@ function Web3Provider({ children }) {
   // 1. INITIALIZE READ-ONLY CONTRACTS (Shows data even if not connected)
   // ----------------------------------------
   useEffect(() => {
-    // If we already have a signer (write access), don't downgrade to read-only
+    
     if (address && contracts.lottery && contracts.lottery.runner) return;
 
     const provider = new ethers.JsonRpcProvider("https://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO"); // or use publicClient
@@ -149,7 +149,59 @@ function Web3Provider({ children }) {
   loadSigner();
 }, [isConnected, walletClient, wagmiAddress]);
 
-// ⭐ SYSTEM: CHECK PENDING TRANSACTIONS (Fix for Mobile)
+  
+
+
+
+
+
+// useEffect(() => {
+//   if (!contracts?.lottery) return;
+
+//   const lottery = contracts.lottery;
+
+//   // WinnerDrawn(roundId, winner, tokenId)
+//   const winnerHandler = (roundId, winner, tokenId) => {
+//     notify(`🏆 Winner Selected: ${winner.slice(0, 6)}... Round: ${roundId}`);
+//   };
+
+//   // NewRoundStarted(newRoundId)
+//   const newRoundHandler = (newRoundId) => {
+//     notify(`🎉 New Round Started! Round ${newRoundId}`);
+//   };
+
+//   // TicketPriceChanged(newPrice)
+//   const priceHandler = (newPrice) => {
+//     notify(`💲 Ticket Price Updated: ${Number(ethers.formatUnits(newPrice, 6))} USDC`);
+//   };
+
+//   // MaxTicketsChanged(newMax)
+//   const maxHandler = (newMax) => {
+//     notify(`📦 Max Tickets Changed: ${newMax}`);
+//   };
+
+//   // MaxTicketsPerUserChanged(newLimit)
+//   const limitHandler = (newLimit) => {
+//     notify(`👤 Max Tickets Per User Updated: ${newLimit}`);
+//   };
+
+//   // Register listeners
+//   lottery.on("WinnerDrawn", winnerHandler);
+//   lottery.on("NewRoundStarted", newRoundHandler);
+//   lottery.on("TicketPriceChanged", priceHandler);
+//   lottery.on("MaxTicketsChanged", maxHandler);
+//   lottery.on("MaxTicketsPerUserChanged", limitHandler);
+
+//   return () => {
+//     lottery.off("WinnerDrawn", winnerHandler);
+//     lottery.off("NewRoundStarted", newRoundHandler);
+//     lottery.off("TicketPriceChanged", priceHandler);
+//     lottery.off("MaxTicketsChanged", maxHandler);
+//     lottery.off("MaxTicketsPerUserChanged", limitHandler);
+//   };
+// }, [contracts]);
+
+// ⭐ SYSTEM: CHECK PENDING TRANSACTIONS 
   // ----------------------------------------
   const checkPendingTransaction = async (provider) => {
     const savedTx = localStorage.getItem("pendingBuy");
@@ -181,9 +233,7 @@ function Web3Provider({ children }) {
   };
 
 
-  // ----------------------------------------
-  // BUY TICKET
-  // ----------------------------------------
+ 
   const buyTicket = async (amount, userData) => {
     try {
       if (!contracts.lottery || !contracts.lottery.runner) {
@@ -220,9 +270,6 @@ function Web3Provider({ children }) {
     }
   };
 
-  // ----------------------------------------
-  // LOTTERY INFO (Works with Read-Only or Signer)
-  // ----------------------------------------
   const getLotteryInfo = async () => {
     if (!contracts.lottery) return null;
     try {

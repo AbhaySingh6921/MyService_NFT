@@ -16,7 +16,7 @@ const ProfileCard = ({ userImage, userName, portfolioLink }) => {
             rel="noopener noreferrer"
             className={styles.infoLink}
           >
-          info
+          ℹ️info
           </a>
         </div>
       </div>

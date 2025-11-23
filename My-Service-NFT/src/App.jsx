@@ -1,20 +1,19 @@
 
 import React, { useState ,useEffect} from "react";
-
-import HeroButton from "./components/HeroButton";
-
-import ProfileCard from "./components/ProfileCard";
-import CountdownTimer from "./components/CountdownTimer";
-import ProgressBar from "./components/ProgressBar";
-import ServiceCard from "./components/ServiceCard";
-import Agreement from "./components/Agreement";
-import BuyTicketpop from "./components/BuyTicketpop.jsx";
+///smart conytracts
 import { useWeb3 } from "../context/Web3Context";
 import { useNavigate } from "react-router-dom";
-import ParticipantsPopup from "./components/ParticipantsPopup.jsx";
-import TicketsPopup from "./components/TicketsPopup.jsx";
-import ServicePopup from "./components/ServicePopup.jsx";
 import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
+//components
+import { ProfileCard,
+  ProgressBar,
+  ServiceCard,
+  Agreement,
+  HeroButton,
+  BuyTicketpop,
+  ParticipantsPopup,
+  TicketsPopup,
+  ServicePopup} from "./components/ComponentIndex.js";
 
 
 
@@ -24,10 +23,10 @@ import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
 
 const App = () => {
     //smart contracts integration 
-    const {buyTicket,address,getLotteryInfo,contracts}=useWeb3();
+    const {buyTicket,address,getLotteryInfo,contracts,notify}=useWeb3();
     const { openConnectModal } = useConnectModal();
     const [showBuyPopup, setShowBuyPopup] = useState(false);
-    const [lotteryData, setLotteryData] = useState(null);
+    const [lotteryData, setLotteryData] = useState([]);
     const [showParticipants, setShowParticipants] = useState(false);
     const [showTicketsPopup, setShowTicketsPopup] = useState(false);
     const [showServicePopup, setShowServicePopup] = useState(false);
@@ -37,9 +36,9 @@ const App = () => {
     const navigate = useNavigate();
 
     const dummyLotteryData = {
-  maxTickets: 1000,
-  totalSold: 450,
-};
+      maxTickets: 1000,
+      totalSold: 450,
+    };
 
 
 useEffect(() => {
@@ -51,7 +50,7 @@ useEffect(() => {
     sessionStorage.setItem("wallet-reloaded", "true");
     window.location.reload();
   }
-  console.log("page reload after wallet connect");
+  
 }, [address]);
 
     //for loterry data fetch 
@@ -60,6 +59,7 @@ useEffect(() => {
 
   const load = async () => {
     const data = await getLotteryInfo();
+   
     setLotteryData(data);
   };
 
@@ -73,9 +73,11 @@ const handleServiceClick = (data) => {
   setServicePopupData(data);
   setShowServicePopup(true);
 };
+// Event listeners for lottery contract
+
+
+
 // ----Service Card Info----
-
-
   const serviceData = [
   {
     imageUrl: "/serviceCards/Professional&Web3Services.png",
@@ -123,8 +125,9 @@ const handleServiceClick = (data) => {
     WebkitBackgroundClip: "text",
   }}
 >
-  🎟️ Raffle ends when 1000 tickets are sold.
+  🎟️ Raffle ends when {lotteryData.maxTickets} tickets are sold.
 </div>
+
 
 
   
@@ -260,7 +263,7 @@ const handleServiceClick = (data) => {
         <ProfileCard
           userImage={"/dummyProfile.png"}
           userName={"Emerson Philips"}
-          units={3.2}
+           portfolioLink="https://your-portfolio-link.com"
         ></ProfileCard>
         <div
             className="
@@ -293,7 +296,7 @@ const handleServiceClick = (data) => {
       {/* ----Service Section---- */}
       <section className="serviceProviderProfile">
         <h2>Service Provider Profile</h2>
-
+      
         <div className="serviceGrid mt-[40px]">
           {serviceData.map((item, index) => (
   <ServiceCard

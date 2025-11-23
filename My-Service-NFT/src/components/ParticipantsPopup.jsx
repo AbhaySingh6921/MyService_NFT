@@ -10,15 +10,14 @@ const ParticipantsPopup = ({ onClose }) => {
   useEffect(() => {
     const loadParticipants = async () => {
       try {
-        const res = await axios.get("https://myservice-nft-1.onrender.com/participants");
+        const res = await axios.get(
+          "https://myservice-nft-1.onrender.com/participants"
+        );
 
         if (res.data.success) {
-          setParticipants(res.data.participants);
+          // ⭐ Reverse order (show latest first)
+          setParticipants(res.data.participants.reverse());
         }
-//         console.log("RAW API RESPONSE:", res.data);
-// console.log("participants VALUE:", res.data.participants);
-// console.log("Is Array:", Array.isArray(res.data.participants));
-
       } catch (err) {
         console.error(err);
       } finally {
@@ -32,11 +31,11 @@ const ParticipantsPopup = ({ onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-50">
       <div
-        className="relative p-6 rounded-2xl shadow-2xl text-white w-[380px] max-h-[80vh] overflow-y-auto"
+        className="relative p-6 rounded-2xl shadow-2xl text-white w-[380px] max-h-[80vh]"
         style={{
           background:
             "linear-gradient(135deg, rgba(21,191,253,0.12) 0%, rgba(156,55,253,0.08) 100%)",
-          border: "1px solid rgba(255,255,255,0.15)"
+          border: "1px solid rgba(255,255,255,0.15)",
         }}
       >
         {/* Close Button */}
@@ -48,11 +47,11 @@ const ParticipantsPopup = ({ onClose }) => {
         </button>
 
         <h2
-          className="text-2xl font-semibold mb-4"
+          className="text-2xl font-semibold mb-3"
           style={{
             background: "linear-gradient(90deg, #15BFFD, #9C37FD)",
             WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent"
+            WebkitTextFillColor: "transparent",
           }}
         >
           Participants
@@ -63,30 +62,40 @@ const ParticipantsPopup = ({ onClose }) => {
         ) : participants.length === 0 ? (
           <p className="text-white/70 text-center">No participants yet.</p>
         ) : (
-          <ul className="flex flex-col gap-3">
-  {participants.map((p, i) => (
-    <div
-      key={i}
-      className="p-2 bg-black/30 rounded-lg border border-white/10 flex justify-between items-center"
-    >
-      {/* Left side: Name + Wallet */}
-      <div>
-        <div className="text-sm font-semibold">{p.name}</div>
+          <>
+            {/* ⭐ Scrollable List */}
+            {/* ⭐ Ticket Count at Top (ONE TIME) */}
+            <div className="text-sm text-[#15BFFD] font-semibold mb-3">
+              🎟️ Total Tickets: {participants.reduce((sum, p) => sum + p.amount, 0)}
+            </div>
 
-        <div className="text-xs text-white/60">
-          {p.walletAddress.slice(0, 6)}...
-          {p.walletAddress.slice(-4)}
+            {/* ⭐ Scrollable List */}
+            <div className="max-h-[240px] overflow-y-auto pr-1 custom-scroll">
+              <ul className="flex flex-col gap-3">
+              {participants.map((p, i) => (
+            <div
+              key={i}
+              className="p-2 bg-black/30 rounded-lg border border-white/10 flex justify-between items-start"
+            >
+        <div>
+          <div className="text-sm font-semibold">{p.name}</div>
+
+          <div className="text-xs text-white/60">
+            {p.walletAddress.slice(0, 6)}...
+            {p.walletAddress.slice(-4)}
+          </div>
+
+          {/* You can show user's ticket count here if needed */}
+          <div className="text-[10px] text-[#15BFFD] mt-1">
+            Tickets: {p.amount}
+          </div>
         </div>
       </div>
+    ))}
+  </ul>
+</div>
 
-      {/* Right side: Ticket Amount */}
-      <div className="text-xs text-[#15BFFD] font-semibold">
-        {p.amount} 
-      </div>
-    </div>
-  ))}
-</ul>
-
+          </>
         )}
       </div>
     </div>
