@@ -123,6 +123,7 @@ function Web3Provider({ children }) {
 
     console.log("📢 Loaded Read-Only Contracts");
     setContracts({ lottery: readLottery, nft: readNft });
+    checkPendingTransaction(provider);
   }, []); // Run once on mount
 
   // ----------------------------------------
@@ -148,31 +149,73 @@ function Web3Provider({ children }) {
   loadSigner();
 }, [isConnected, walletClient, wagmiAddress]);
 
+// ⭐ SYSTEM: CHECK PENDING TRANSACTIONS (Fix for Mobile)
+  // ----------------------------------------
+  const checkPendingTransaction = async (provider) => {
+    const savedTx = localStorage.getItem("pendingBuy");
+    if (!savedTx) return;
+
+    const { hash, name, email, amount, wallet } = JSON.parse(savedTx);
+    console.log("🔄 Found pending transaction:", hash);
+    notify("🔄 Verifying previous purchase...");
+
+    try {
+      const receipt = await provider.waitForTransaction(hash);
+      
+      if (receipt && receipt.status === 1) {
+        notify("🎉 Previous transaction confirmed!");
+        // Finish the backend call
+        await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
+          name, email, walletAddress: wallet, amount
+        });
+        notify("✅ Data saved to backend");
+      } else {
+        notify("❌ Previous transaction failed");
+      }
+    } catch (e) {
+      console.error("Recovery Error:", e);
+    } finally {
+      // Clear storage so we don't check again
+      localStorage.removeItem("pendingBuy");
+    }
+  };
+
 
   // ----------------------------------------
   // BUY TICKET
   // ----------------------------------------
-  const buyTicket = async (amount = 1) => {
+  const buyTicket = async (amount, userData) => {
     try {
-      if (!address || !contracts.lottery) {
-        notify("⚠ Wallet not fully loaded yet");
-        return { success: false };
-      }
-
-      // Check if we have a signer (runner)
-      if (!contracts.lottery.runner) {
-        notify("⚠ Read-only mode. Please reconnect wallet.");
+      if (!contracts.lottery || !contracts.lottery.runner) {
+        // Force Reload if signer is missing on mobile
+        window.location.reload(); 
         return { success: false };
       }
 
       const tx = await contracts.lottery.buyTickets(amount);
-      notify("⏳ Transaction Sent...");
+      
+      // ⭐ SAVE TO STORAGE IMMEDIATELY (Before App Sleeps)
+      localStorage.setItem("pendingBuy", JSON.stringify({
+        hash: tx.hash,
+        name: userData.name,
+        email: userData.email,
+        amount: amount,
+        wallet: address.toLowerCase()
+      }));
+
+      notify("⏳ Transaction Sent... Please wait.");
+      
+      // Wait for it (might fail if app sleeps, but Recovery System handles it)
       await tx.wait();
+      
+      // If app didn't sleep, we finish here:
+      localStorage.removeItem("pendingBuy"); // Clear storage since we succeeded
       notify("🎉 Ticket Purchased!");
       return { success: true };
+
     } catch (err) {
       console.error(err);
-      notify("❌ Transaction failed");
+      notify("❌ Transaction failed or rejected");
       return { success: false };
     }
   };

@@ -77,10 +77,11 @@ export function BuyTicketpop({ onClose }) {
         return;
       }
 
-      // 2. SECOND check if our App Context has finished loading the signer
-      // This prevents the "Connect Again" loop. We just tell them to wait.
-      if (!contextAddress) {
-        notify("⏳ Wallet syncing... Please click Buy again in 2 seconds.");
+      // 2. SECOND check: Mobile Glitch Fix
+      // If Wagmi says connected, but Context is empty, force a reload to sync.
+      if (isConnected && !contextAddress) {
+        notify("⚠ Syncing wallet... Reloading page.");
+        window.location.reload();
         return; 
       }
 
@@ -91,15 +92,16 @@ export function BuyTicketpop({ onClose }) {
 
       setLoading(true);
 
-      // 3. Perform Buy
-      const tx = await buyTicket(amount);
+      // 3. Perform Buy (Pass user data for recovery)
+      // Note: Ensure your Web3Context buyTicket function accepts the second argument!
+      const tx = await buyTicket(amount, { name, email });
 
       if (!tx || !tx.success) {
         setLoading(false);
         return;
       }
 
-      // 4. Update Database
+      // 4. Update Database (If browser stayed alive)
       await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
         name,
         email,
@@ -254,7 +256,7 @@ export function BuyTicketpop({ onClose }) {
             : !contracts?.lottery
             ? "Loading Contract..."
             : isConnected && !contextAddress
-            ? "Syncing Wallet..." // User sees this instead of loop
+            ? "Sync Wallet (Click to Reload)" 
             : "Buy Now"}
         </button>
       </div>
