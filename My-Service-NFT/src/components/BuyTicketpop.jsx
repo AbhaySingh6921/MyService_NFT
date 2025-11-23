@@ -69,58 +69,57 @@ export function BuyTicketpop({ onClose }) {
   // 🔥 FIX: HANDLE BUY
   // -----------------------------------------------------------
   const handleBuy = async () => {
-    try {
-      // 1. FIRST check purely if Wallet is connected (Instant check)
-      if (!isConnected) {
-        notify("⚠ Please connect your wallet first.");
-        if (openConnectModal) openConnectModal();
-        return;
-      }
-
-      // 2. SECOND check: Mobile Glitch Fix
-      // If Wagmi says connected, but Context is empty, force a reload to sync.
-      if (isConnected && !contextAddress) {
-        notify("⚠ Syncing wallet... Reloading page.");
-        window.location.reload();
-        return; 
-      }
-
-      if (!name || !email) {
-        notify("⚠ Please fill in your name and email.");
-        return;
-      }
-
-      setLoading(true);
-
-      // 3. Perform Buy (Pass user data for recovery)
-      // Note: Ensure your Web3Context buyTicket function accepts the second argument!
-      const tx = await buyTicket(amount, { name, email });
-
-      if (!tx || !tx.success) {
-        setLoading(false);
-        return;
-      }
-      window.location.reload();
-
-      // 4. Update Database (If browser stayed alive)
-      await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
-        name,
-        email,
-        walletAddress: contextAddress.toLowerCase(),
-        amount,
-        roundId: contracts.lottery?.roundId || 0,
-        timestamp: Date.now(),
-      });
-
-      notify("🎉 Ticket purchased successfully!");
-      onClose();
-    } catch (err) {
-      console.error("Buy Error:", err);
-      notify("❌ Transaction failed");
-    } finally {
-      setLoading(false);
+  try {
+    if (!isConnected) {
+      notify("⚠ Please connect your wallet first.");
+      if (openConnectModal) openConnectModal();
+      return;
     }
-  };
+
+    if (isConnected && !contextAddress) {
+      notify("⚠ Syncing wallet... Reloading page.");
+      window.location.reload();
+      return;
+    }
+
+    if (!name || !email) {
+      notify("⚠ Please fill in your name and email.");
+      return;
+    }
+
+    setLoading(true);
+
+    const tx = await buyTicket(amount, { name, email });
+
+    if (!tx || !tx.success) {
+      setLoading(false);
+      return;
+    }
+
+    // ⭐ BACKEND UPDATE FIRST BEFORE RELOAD
+    await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
+      name,
+      email,
+      walletAddress: contextAddress.toLowerCase(),
+      amount,
+      roundId: contracts.lottery?.roundId || 0,
+      timestamp: Date.now(),
+    });
+
+    notify("🎉 Ticket purchased successfully!");
+    onClose();
+
+    // ⭐ RELOAD AFTER backend request finishes
+    setTimeout(() => window.location.reload(), 800);
+
+  } catch (err) {
+    console.error("Buy Error:", err);
+    notify("❌ Transaction failed");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // -----------------------------------------------------------
   // UI
