@@ -5,21 +5,30 @@ import { useWeb3 } from "../../context/Web3Context";
 const TicketsPopup = ({ onClose }) => {
   const { address } = useWeb3();
   const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);     
 
   useEffect(() => {
     if (!address) return;
 
     const load = async () => {
       try {
+        setLoading(true);                           // ⭐ Start loading
+
         const res = await axios.get(
           `https://myservice-nft-1.onrender.com/tickets/${address}`
         );
+
         if (res.data.success) {
-          setTickets(res.data.tickets);
-          console.log("✅ Fetched tickets:", res.data.tickets);
-        }
+        const sorted = [...res.data.tickets].sort(
+          (a, b) => b.timestamp - a.timestamp   // ⭐ NEW
+        );
+
+        setTickets(sorted);
+      }
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);                          // ⭐ Stop loading
       }
     };
 
@@ -33,11 +42,17 @@ const TicketsPopup = ({ onClose }) => {
 
         <h2 className="text-xl font-semibold mb-4">Your Tickets</h2>
 
-        {tickets.length === 0 ? (
-          <p className="text-white/60 text-sm">No tickets found.</p>
+        
+        {loading ? (
+          <p className="text-white/60 text-sm animate-pulse">
+            Loading your tickets...
+          </p>
+        ) : tickets.length === 0 ? (
+          <p className="text-white/60 text-sm">
+            No tickets found.
+          </p>
         ) : (
           <ul className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2">
-
             {tickets.map((t, i) => (
               <div
                 key={i}

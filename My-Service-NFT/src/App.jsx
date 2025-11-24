@@ -157,7 +157,7 @@ const handleServiceClick = (data) => {
   }) => {
     return (
       <HeroButton onClick={account ? openAccountModal : openConnectModal}>
-        {account ? "Connected" : "Connect Wallet"}
+        {account ? "Disconnect Wallet" : "Connect Wallet"}
       </HeroButton>
     );
   }}
