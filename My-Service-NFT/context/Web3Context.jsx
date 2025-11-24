@@ -151,44 +151,50 @@ function Web3Provider({ children }) {
 
 
  
-  useEffect(() => {
-  if (!publicClient) return;
+ useEffect(() => {
+  let interval;
 
   async function checkPending() {
     const saved = localStorage.getItem("pendingBuy");
     if (!saved) return;
 
-    const { hash, name, email, amount, wallet } = JSON.parse(saved);
+    const data = JSON.parse(saved);
+    const { hash, name, email, amount, wallet } = data;
 
-    // notify("🔄 Restoring previous transaction…");
+    if (!hash) return;
 
     try {
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      // Wait for blockchain confirmation
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash,
+        timeout: 1000 * 60 * 5 // 5 min safety
+      });
 
       if (receipt.status === "success") {
-         notify("🎉 Transaction Confirmed!");
+        // Save to DB AFTER confirmation
+        // await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
+        //   name,
+        //   email,
+        //   walletAddress: wallet,
+        //   amount,
+        //   timestamp: Date.now(),
+        // });
 
-        await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
-          name,
-          email,
-          walletAddress: wallet,
-          amount,
-          timestamp: Date.now(),
-        });
-
-        // notify("✅ Backend Updated");
-      } else {
-        notify("❌ Transaction Failed");
+        notify("🎉 Transaction Confirmed!");
+        localStorage.removeItem("pendingBuy");
+        clearInterval(interval);
       }
     } catch (err) {
-      console.error("Recovery Error:", err);
+      console.log("⏳ Waiting… (mobile safe)");
     }
-
-    localStorage.removeItem("pendingBuy");
   }
 
-  checkPending();
+  // Retry every 2 seconds until success
+  interval = setInterval(checkPending, 2000);
+
+  return () => clearInterval(interval);
 }, [publicClient]);
+
 
 
 
