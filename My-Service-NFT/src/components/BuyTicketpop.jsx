@@ -71,48 +71,40 @@ export function BuyTicketpop({ onClose }) {
   const handleBuy = async () => {
   try {
     if (!isConnected) {
-      notify("⚠ Please connect your wallet first.");
+      notify("⚠ Connect wallet first.");
       if (openConnectModal) openConnectModal();
       return;
     }
 
-    if (isConnected && !contextAddress) {
-      notify("⚠ Syncing wallet... Reloading page.");
-      window.location.reload();
-      return;
-    }
-
     if (!name || !email) {
-      notify("⚠ Please fill in your name and email.");
+      notify("⚠ Name & Email required.");
       return;
     }
 
     setLoading(true);
 
-    const tx = await buyTicket(amount, { name, email });
+    const res = await buyTicket(amount, { name, email });
 
-    if (!tx || !tx.success) {
+    if (!res.success) {
       setLoading(false);
       return;
     }
 
-    // ⭐ BACKEND UPDATE FIRST BEFORE RELOAD
+    // Backend AFTER tx sent
     await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
       name,
       email,
       walletAddress: contextAddress.toLowerCase(),
       amount,
-      roundId: contracts.lottery?.roundId || 0,
       timestamp: Date.now(),
     });
 
-    notify("🎉 Ticket purchased successfully!");
-    setTimeout(() => {
-  onClose();
-  window.location.reload();
-}, 1000);
+    notify("🎉 Ticket Purchased!");
 
-    
+    onClose();
+
+    // Reload after backend (mobile safe)
+    setTimeout(() => window.location.reload(), 700);
 
   } catch (err) {
     console.error("Buy Error:", err);
@@ -121,6 +113,7 @@ export function BuyTicketpop({ onClose }) {
     setLoading(false);
   }
 };
+
 
 
   // -----------------------------------------------------------

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { ethers } from "ethers";
 import Toast from "../src/components/Toast.jsx";
 import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
+import axios from "axios";
 
 import {
   lotteryAddress,
@@ -123,7 +124,7 @@ function Web3Provider({ children }) {
 
     console.log("📢 Loaded Read-Only Contracts");
     setContracts({ lottery: readLottery, nft: readNft });
-    checkPendingTransaction(provider);
+    // checkPendingTransaction(provider);
   }, []); // Run once on mount
 
   // ----------------------------------------
@@ -261,79 +262,92 @@ function Web3Provider({ children }) {
 
 // ⭐ SYSTEM: CHECK PENDING TRANSACTIONS 
   // ----------------------------------------
-  const checkPendingTransaction = async (provider) => {
-    const savedTx = localStorage.getItem("pendingBuy");
-    if (!savedTx) return;
+ 
+ 
+  useEffect(() => {
+  if (!publicClient) return;
 
-    const { hash, name, email, amount, wallet } = JSON.parse(savedTx);
-    console.log("🔄 Found pending transaction:", hash);
-    notify("🔄 Verifying previous purchase...");
+  async function checkPending() {
+    const saved = localStorage.getItem("pendingBuy");
+    if (!saved) return;
+
+    const { hash, name, email, amount, wallet } = JSON.parse(saved);
+
+    notify("🔄 Restoring previous transaction…");
 
     try {
-      const receipt = await provider.waitForTransaction(hash);
-      
-      if (receipt && receipt.status === 1) {
-        notify("🎉 Previous transaction confirmed!");
-        // Finish the backend call
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+      if (receipt.status === "success") {
+        notify("🎉 Transaction Confirmed!");
+
         await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
-          name, email, walletAddress: wallet, amount
+          name,
+          email,
+          walletAddress: wallet,
+          amount,
+          timestamp: Date.now(),
         });
-        notify("✅ Data saved to backend");
+
+        notify("✅ Backend Updated");
       } else {
-        notify("❌ Previous transaction failed");
+        notify("❌ Transaction Failed");
       }
-    } catch (e) {
-      console.error("Recovery Error:", e);
-    } finally {
-      // Clear storage so we don't check again
-      localStorage.removeItem("pendingBuy");
+    } catch (err) {
+      console.error("Recovery Error:", err);
     }
-  };
+
+    localStorage.removeItem("pendingBuy");
+  }
+
+  checkPending();
+}, [publicClient]);
+
 
 
  
-     const buyTicket = async (amount, userData) => {
+ const buyTicket = async (amount, userData) => {
   try {
-    // ⭐ Retry until signer is ready (mobile fix)
     let retries = 0;
     while ((!contracts.lottery || !contracts.lottery.runner) && retries < 10) {
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 300));
       retries++;
     }
 
     if (!contracts.lottery || !contracts.lottery.runner) {
-      notify("⚠ Wallet not synchronized. Please reconnect.");
+      notify("⚠ Wallet not ready. Please reconnect.");
       return { success: false };
     }
 
-    // ⭐ Now transaction will NOT fail randomly anymore
     const tx = await contracts.lottery.buyTickets(amount);
 
-    localStorage.setItem(
-      "pendingBuy",
-      JSON.stringify({
-        name: userData.name,
-        email: userData.email,
-        amount,
-        wallet: address.toLowerCase(),
-        timestamp: Date.now(),
-      })
-    );
+    // Save BEFORE MetaMask switches app
+    localStorage.setItem("pendingBuy", JSON.stringify({
+      hash: tx.hash,
+      name: userData.name,
+      email: userData.email,
+      amount,
+      wallet: address?.toLowerCase(),
+      timestamp: Date.now(),
+    }));
 
-    notify("⏳ Transaction Sent...");
-    await tx.wait();
+    notify("⏳ Transaction Sent…");
 
-    notify("🎉 Ticket Purchased!");
-    localStorage.removeItem("pendingBuy");
+    // DO NOT await here — mobile killer
+    publicClient.waitForTransactionReceipt({ hash: tx.hash }).then(() => {
+      notify("🎉 Ticket Purchased Successfully!");
+      localStorage.removeItem("pendingBuy");
+    });
 
     return { success: true };
 
   } catch (err) {
-    console.error("❌ Buy Error:", err);
-    notify("❌ Transaction failed or rejected");
+    console.error("Buy Error:", err);
+    notify("❌ Transaction failed");
     return { success: false };
   }
 };
+
 
 
   const getLotteryInfo = async () => {
