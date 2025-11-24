@@ -27,6 +27,9 @@ export function BuyTicketpop({ onClose }) {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [userTicketsBought, setUserTicketsBought] = useState(0);
+  const remainingForUser = Math.max(maxTicketPerUser - userTicketsBought, 0);
+
 
   const remainingTickets = maxTickets - totalSold;
 
@@ -39,11 +42,12 @@ export function BuyTicketpop({ onClose }) {
       if (!contracts?.lottery) return;
 
       try {
-        const [priceWei, maxUser, maxTix, sold] = await Promise.all([
+        const [priceWei, maxUser, maxTix, sold,ticketsBoughtByUser] = await Promise.all([
           contracts.lottery.ticketPrice(),
           contracts.lottery.maxTicketsPerUser(),
           contracts.lottery.maxTickets(),
           contracts.lottery.getTotalTicketsSold(),
+          contracts.lottery.getTicketsByHolder(contextAddress),
         ]);
 
         const price = Number(ethers.formatUnits(priceWei, 6));
@@ -52,6 +56,7 @@ export function BuyTicketpop({ onClose }) {
         setMaxTicketPerUser(Number(maxUser));
         setMaxTickets(Number(maxTix));
         setTotalSold(Number(sold));
+        setUserTicketsBought(Number(ticketsBoughtByUser));
         setTotal(price * amount);
       } catch (err) {
         console.error("Price Fetch Error:", err);
@@ -242,8 +247,14 @@ export function BuyTicketpop({ onClose }) {
           </div>
 
           <div className="flex flex-col items-center">
-            <span className="text-white/50">Sold</span>
-            <span className="text-[#15BFFD]">{totalSold}</span>
+            <span className="text-white/50">You Bought</span>
+            <span className="text-[#15BFFD]">{userTicketsBought}</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-white/50">You Can Buy</span>
+            <span className="text-[#9C37FD] font-semibold">
+            {remainingForUser}
+            </span>
           </div>
 
           <div className="flex flex-col items-center">

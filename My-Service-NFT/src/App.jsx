@@ -137,10 +137,10 @@ const handleServiceClick = (data) => {
 
       {/* ----Heading---- */}
       <h1>
-        <span>Win 10 Years of</span> Exclusive Time & Service
+        <span>The World’s First NFT Backed  </span> by 31,320 Hours of Real Human Time
       </h1>
       <p className="subHeading">
-        The World’s First NFT Backed by 31,320 Hours of Real Human Time
+        
         I’m offering 10 years (31,320 hours) of my time as a single NFT, available through a raffle lottery.
         Whoever wins the NFT gets exclusive access to 200+ services — personal, domestic, professional, farming, and even emergency health-support donations.
         The NFT is fully transferable and can be resold anytime.

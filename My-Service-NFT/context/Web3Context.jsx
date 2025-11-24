@@ -100,7 +100,7 @@ export const useWeb3 = () => useContext(Web3Context);
 function Web3Provider({ children }) {
   const { address: wagmiAddress, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient(); // ⭐ Get public provider for reading data
+  const publicClient = usePublicClient(); //  Get public provider for reading data
 
   const [address, setAddress] = useState(null);
   
@@ -110,9 +110,8 @@ function Web3Provider({ children }) {
 
   const notify = (msg) => setNotifications((p) => [...p, msg]);
 
-  // ----------------------------------------
   // 1. INITIALIZE READ-ONLY CONTRACTS (Shows data even if not connected)
-  // ----------------------------------------
+ 
   useEffect(() => {
     
     if (address && contracts.lottery && contracts.lottery.runner) return;
@@ -124,7 +123,7 @@ function Web3Provider({ children }) {
 
     console.log("📢 Loaded Read-Only Contracts");
     setContracts({ lottery: readLottery, nft: readNft });
-    // checkPendingTransaction(provider);
+   
   }, []); // Run once on mount
 
   // ----------------------------------------
@@ -150,119 +149,7 @@ function Web3Provider({ children }) {
   loadSigner();
 }, [isConnected, walletClient, wagmiAddress]);
 
-// useEffect(() => {
-//   const WS_URL =
-//     "wss://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO";
 
-//   let wsProvider;
-//   let wsLottery;
-
-//   async function connectWS() {
-//     try {
-//       wsProvider = new ethers.WebSocketProvider(WS_URL);
-
-//       wsLottery = new ethers.Contract(
-//         lotteryAddress,
-//         lotteryAbi,
-//         wsProvider
-//       );
-
-//       console.log("📡 WebSocket Connected!");
-
-//       // ⭐ EVENTS (NO FILTERS!!)
-//       wsLottery.on("TicketsPurchased", (roundId, buyer, amount) => {
-//         notify(`🎟 ${buyer.slice(0, 6)} bought ${amount}`);
-//       });
-
-//       wsLottery.on("WinnerDrawn", (roundId, winner, tokenId) => {
-//         notify(`🏆 Winner ${winner}`);
-//       });
-
-//       wsLottery.on("NewRoundStarted", (roundId) => {
-//         notify(`🔄 New Round ${roundId}`);
-//       });
-
-//       // Auto reconnect
-//       wsProvider._websocket.on("close", () => {
-//         console.log("⚠ WS closed, reconnecting...");
-//         setTimeout(connectWS, 2000);
-//       });
-
-//     } catch (err) {
-//       console.error("❌ WS Error:", err);
-
-//       // retry
-//       setTimeout(connectWS, 2000);
-//     }
-//   }
-
-//   connectWS();
-
-//   return () => {
-//     wsLottery?.removeAllListeners();
-//     wsProvider?.destroy?.();
-//   };
-// }, []);
-
-
-
-
-
-  
-
-
-
-
-
-// useEffect(() => {
-//   if (!contracts?.lottery) return;
-
-//   const lottery = contracts.lottery;
-
-//   // WinnerDrawn(roundId, winner, tokenId)
-//   const winnerHandler = (roundId, winner, tokenId) => {
-//     notify(`🏆 Winner Selected: ${winner.slice(0, 6)}... Round: ${roundId}`);
-//   };
-
-//   // NewRoundStarted(newRoundId)
-//   const newRoundHandler = (newRoundId) => {
-//     notify(`🎉 New Round Started! Round ${newRoundId}`);
-//   };
-
-//   // TicketPriceChanged(newPrice)
-//   const priceHandler = (newPrice) => {
-//     notify(`💲 Ticket Price Updated: ${Number(ethers.formatUnits(newPrice, 6))} USDC`);
-//   };
-
-//   // MaxTicketsChanged(newMax)
-//   const maxHandler = (newMax) => {
-//     notify(`📦 Max Tickets Changed: ${newMax}`);
-//   };
-
-//   // MaxTicketsPerUserChanged(newLimit)
-//   const limitHandler = (newLimit) => {
-//     notify(`👤 Max Tickets Per User Updated: ${newLimit}`);
-//   };
-
-//   // Register listeners
-//   lottery.on("WinnerDrawn", winnerHandler);
-//   lottery.on("NewRoundStarted", newRoundHandler);
-//   lottery.on("TicketPriceChanged", priceHandler);
-//   lottery.on("MaxTicketsChanged", maxHandler);
-//   lottery.on("MaxTicketsPerUserChanged", limitHandler);
-
-//   return () => {
-//     lottery.off("WinnerDrawn", winnerHandler);
-//     lottery.off("NewRoundStarted", newRoundHandler);
-//     lottery.off("TicketPriceChanged", priceHandler);
-//     lottery.off("MaxTicketsChanged", maxHandler);
-//     lottery.off("MaxTicketsPerUserChanged", limitHandler);
-//   };
-// }, [contracts]);
-
-// ⭐ SYSTEM: CHECK PENDING TRANSACTIONS 
-  // ----------------------------------------
- 
  
   useEffect(() => {
   if (!publicClient) return;
@@ -273,13 +160,13 @@ function Web3Provider({ children }) {
 
     const { hash, name, email, amount, wallet } = JSON.parse(saved);
 
-    notify("🔄 Restoring previous transaction…");
+    // notify("🔄 Restoring previous transaction…");
 
     try {
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
       if (receipt.status === "success") {
-        notify("🎉 Transaction Confirmed!");
+        // notify("🎉 Transaction Confirmed!");
 
         await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
           name,
@@ -289,7 +176,7 @@ function Web3Provider({ children }) {
           timestamp: Date.now(),
         });
 
-        notify("✅ Backend Updated");
+        // notify("✅ Backend Updated");
       } else {
         notify("❌ Transaction Failed");
       }
