@@ -166,7 +166,7 @@ function Web3Provider({ children }) {
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
       if (receipt.status === "success") {
-        // notify("🎉 Transaction Confirmed!");
+         notify("🎉 Transaction Confirmed!");
 
         await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
           name,

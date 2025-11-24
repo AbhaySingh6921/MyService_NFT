@@ -95,16 +95,16 @@ export function BuyTicketpop({ onClose }) {
       return;
     }
 
-    // Backend AFTER tx sent
-    await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
-      name,
-      email,
-      walletAddress: contextAddress.toLowerCase(),
-      amount,
-      timestamp: Date.now(),
-    });
+    // // Backend AFTER tx sent
+    // await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
+    //   name,
+    //   email,
+    //   walletAddress: contextAddress.toLowerCase(),
+    //   amount,
+    //   timestamp: Date.now(),
+    // });
 
-    notify("🎉 Ticket Purchased!");
+     notify("⏳ Waiting for confirmation...");
 
     onClose();
 
