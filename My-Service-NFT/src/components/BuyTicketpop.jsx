@@ -107,10 +107,12 @@ export function BuyTicketpop({ onClose }) {
     });
 
     notify("🎉 Ticket purchased successfully!");
-    onClose();
+    setTimeout(() => {
+  onClose();
+  window.location.reload();
+}, 1000);
 
-    // ⭐ RELOAD AFTER backend request finishes
-    setTimeout(() => window.location.reload(), 800);
+    
 
   } catch (err) {
     console.error("Buy Error:", err);
@@ -257,6 +259,7 @@ export function BuyTicketpop({ onClose }) {
               {remainingTickets}
             </span>
           </div>
+          
         </div>
 
         <button

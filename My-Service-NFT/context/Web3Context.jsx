@@ -149,6 +149,64 @@ function Web3Provider({ children }) {
   loadSigner();
 }, [isConnected, walletClient, wagmiAddress]);
 
+// useEffect(() => {
+//   const WS_URL =
+//     "wss://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO";
+
+//   let wsProvider;
+//   let wsLottery;
+
+//   async function connectWS() {
+//     try {
+//       wsProvider = new ethers.WebSocketProvider(WS_URL);
+
+//       wsLottery = new ethers.Contract(
+//         lotteryAddress,
+//         lotteryAbi,
+//         wsProvider
+//       );
+
+//       console.log("📡 WebSocket Connected!");
+
+//       // ⭐ EVENTS (NO FILTERS!!)
+//       wsLottery.on("TicketsPurchased", (roundId, buyer, amount) => {
+//         notify(`🎟 ${buyer.slice(0, 6)} bought ${amount}`);
+//       });
+
+//       wsLottery.on("WinnerDrawn", (roundId, winner, tokenId) => {
+//         notify(`🏆 Winner ${winner}`);
+//       });
+
+//       wsLottery.on("NewRoundStarted", (roundId) => {
+//         notify(`🔄 New Round ${roundId}`);
+//       });
+
+//       // Auto reconnect
+//       wsProvider._websocket.on("close", () => {
+//         console.log("⚠ WS closed, reconnecting...");
+//         setTimeout(connectWS, 2000);
+//       });
+
+//     } catch (err) {
+//       console.error("❌ WS Error:", err);
+
+//       // retry
+//       setTimeout(connectWS, 2000);
+//     }
+//   }
+
+//   connectWS();
+
+//   return () => {
+//     wsLottery?.removeAllListeners();
+//     wsProvider?.destroy?.();
+//   };
+// }, []);
+
+
+
+
+
   
 
 
@@ -234,7 +292,7 @@ function Web3Provider({ children }) {
 
 
  
-  const buyTicket = async (amount, userData) => {
+     const buyTicket = async (amount, userData) => {
   try {
     // ⭐ Retry until signer is ready (mobile fix)
     let retries = 0;
