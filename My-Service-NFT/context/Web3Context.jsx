@@ -405,7 +405,7 @@ const loadPastEvents = async () => {
     const currentBlock = await publicClient.getBlockNumber();
 
     // How far back you want to search (50k blocks)
-    const lookback = 50_000n;
+    const lookback = 2_000n;
 
     const fromBlock = currentBlock > lookback ? currentBlock - lookback : 0n;
 
