@@ -24,7 +24,7 @@ import { ProfileCard,
 
 const App = () => {
     //smart contracts integration 
-    const {address,getLotteryInfo,contracts,loadPastEvents}=useWeb3();
+    const {address,getLotteryInfo,contracts}=useWeb3();
     const { openConnectModal } = useConnectModal();
     const [showBuyPopup, setShowBuyPopup] = useState(false);
     const [lotteryData, setLotteryData] = useState([]);

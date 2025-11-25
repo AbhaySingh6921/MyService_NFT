@@ -111,72 +111,80 @@ function Web3Provider({ children }) {
 
   //for event using websocket
 
-  // ⭐ WebSocket provider (Alchemy)
-const wsProvider = new ethers.WebSocketProvider(
-  "wss://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO"
-);
+//   // ⭐ WebSocket provider (Alchemy)
+// const wsProvider = new ethers.WebSocketProvider(
+//   "wss://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO"
+// );
 
-// ⭐ Lottery contract via WebSocket
-const lotteryWS = new ethers.Contract(
-  lotteryAddress,
-  lotteryAbi,
-  wsProvider
-);
+// // // ⭐ Lottery contract via WebSocket
+// const lotteryWS = new ethers.Contract(
+//   lotteryAddress,
+//   lotteryAbi,
+//   wsProvider
+// );
+// const rpcProvider = new ethers.JsonRpcProvider("https://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO");
 
-// ⭐ WebSocket LIVE event listeners
-useEffect(() => {
-  if (!lotteryWS) return;
+// // ⭐ Read-only contract for past event lookup
+// const lotteryHttp = new ethers.Contract(
+//   lotteryAddress,
+//   lotteryAbi,
+//   rpcProvider
+// );
 
-  console.log("🔌 WebSocket connected: Listening to LIVE events");
+// // ⭐ WebSocket LIVE event listeners
+// useEffect(() => {
+//   if (!lotteryWS) return;
 
-  // ---- Handlers ----
-  const winnerHandler = (roundId, winner, tokenId) => {
-    notify(`🏆 LIVE Winner: ${winner.slice(0, 6)}... Round: ${roundId}`);
-  };
+//   console.log("🔌 WebSocket connected: Listening to LIVE events");
 
-  const newRoundHandler = (newRoundId) => {
-    notify(`🎉 LIVE New Round Started: Round ${newRoundId}`);
-  };
+//   // ---- Handlers ----
+//   const winnerHandler = (roundId, winner, tokenId) => {
+//     notify(`🏆 LIVE Winner: ${winner.slice(0, 6)}... Round: ${roundId}`);
+//   };
 
-  const priceHandler = (newPrice) => {
-    notify(
-      `💲 LIVE Ticket Price Updated: ${Number(
-        ethers.formatUnits(newPrice, 6)
-      )} USDC`
-    );
-  };
+//   const newRoundHandler = (newRoundId) => {
+//     notify(`🎉 LIVE New Round Started: Round ${newRoundId}`);
+//   };
 
-  const maxHandler = (newMax) => {
-    notify(`📦 LIVE Max Tickets Changed: ${newMax}`);
-  };
+//   const priceHandler = (newPrice) => {
+//     notify(
+//       `💲 LIVE Ticket Price Updated: ${Number(
+//         ethers.formatUnits(newPrice, 6)
+//       )} USDC`
+//     );
+//   };
 
-  const limitHandler = (newLimit) => {
-    notify(`👤 LIVE Max Tickets Per User: ${newLimit}`);
-  };
+//   const maxHandler = (newMax) => {
+//     notify(`📦 LIVE Max Tickets Changed: ${newMax}`);
+//   };
 
-  // ---- SUBSCRIBE ----
-  lotteryWS.on("WinnerDrawn", winnerHandler);
-  lotteryWS.on("NewRoundStarted", newRoundHandler);
-  lotteryWS.on("TicketPriceChanged", priceHandler);
-  lotteryWS.on("MaxTicketsChanged", maxHandler);
-  lotteryWS.on("MaxTicketsPerUserChanged", limitHandler);
+//   const limitHandler = (newLimit) => {
+//     notify(`👤 LIVE Max Tickets Per User: ${newLimit}`);
+//   };
 
-  // ---- CLEANUP ----
-  return () => {
-    console.log("🔌 WebSocket disconnected: Cleanup...");
-    lotteryWS.off("WinnerDrawn", winnerHandler);
-    lotteryWS.off("NewRoundStarted", newRoundHandler);
-    lotteryWS.off("TicketPriceChanged", priceHandler);
-    lotteryWS.off("MaxTicketsChanged", maxHandler);
-    lotteryWS.off("MaxTicketsPerUserChanged", limitHandler);
-  };
-}, []);
+//   // ---- SUBSCRIBE ----
+//   lotteryWS.on("WinnerDrawn", winnerHandler);
+//   lotteryWS.on("NewRoundStarted", newRoundHandler);
+//   lotteryWS.on("TicketPriceChanged", priceHandler);
+//   lotteryWS.on("MaxTicketsChanged", maxHandler);
+//   lotteryWS.on("MaxTicketsPerUserChanged", limitHandler);
 
-useEffect(() => {
-  if (contracts?.lottery && publicClient) {
-    loadPastEvents();   // <- fetch past events
-  }
-}, [contracts, publicClient]);
+//   // ---- CLEANUP ----
+//   return () => {
+//     console.log("🔌 WebSocket disconnected: Cleanup...");
+//     lotteryWS.off("WinnerDrawn", winnerHandler);
+//     lotteryWS.off("NewRoundStarted", newRoundHandler);
+//     lotteryWS.off("TicketPriceChanged", priceHandler);
+//     lotteryWS.off("MaxTicketsChanged", maxHandler);
+//     lotteryWS.off("MaxTicketsPerUserChanged", limitHandler);
+//   };
+// }, []);
+
+// useEffect(() => {
+//   if (contracts?.lottery && publicClient) {
+//     loadPastEvents();   // <- fetch past events
+//   }
+// }, [contracts, publicClient]);
 
 
 
@@ -184,46 +192,46 @@ useEffect(() => {
 
 
 //live event handlers
-// useEffect(() => {
-//   if (!contracts?.lottery) return;
+useEffect(() => {
+  if (!contracts?.lottery) return;
 
-//   const lottery = contracts.lottery;
+  const lottery = contracts.lottery;
 
-//   const winnerHandler = (roundId, winner, tokenId) => {
-//     notify(`🏆 Winner Selected: ${winner.slice(0, 6)}... Round: ${roundId}`);
-//   };
+  const winnerHandler = (roundId, winner, tokenId) => {
+    notify(`🏆 Winner Selected: ${winner.slice(0, 6)}... Round: ${roundId}`);
+  };
 
-//   const newRoundHandler = (newRoundId) => {
-//     notify(`🎉 New Round Started! Round ${newRoundId}`);
-//   };
+  const newRoundHandler = (newRoundId) => {
+    notify(`🎉 New Round Started! Round ${newRoundId}`);
+  };
 
-//   const priceHandler = (newPrice) => {
-//     notify(`💲 Ticket Price Updated: ${Number(ethers.formatUnits(newPrice, 6))} USDC`);
-//   };
+  const priceHandler = (newPrice) => {
+    notify(`💲 Ticket Price Updated: ${Number(ethers.formatUnits(newPrice, 6))} USDC`);
+  };
 
-//   const maxHandler = (newMax) => {
-//     notify(`📦 Max Tickets Changed: ${newMax}`);
-//   };
+  const maxHandler = (newMax) => {
+    notify(`📦 Max Tickets Changed: ${newMax}`);
+  };
 
-//   const limitHandler = (newLimit) => {
-//     notify(`👤 Max Tickets Per User Updated: ${newLimit}`);
-//   };
-//   console.log("📢 Subscribing to Lottery Events");
+  const limitHandler = (newLimit) => {
+    notify(`👤 Max Tickets Per User Updated: ${newLimit}`);
+  };
+  console.log("📢 Subscribing to Lottery Events");
 
-//   lottery.on("WinnerDrawn", winnerHandler);
-//   lottery.on("NewRoundStarted", newRoundHandler);
-//   lottery.on("TicketPriceChanged", priceHandler);
-//   lottery.on("MaxTicketsChanged", maxHandler);
-//   lottery.on("MaxTicketsPerUserChanged", limitHandler);
+  lottery.on("WinnerDrawn", winnerHandler);
+  lottery.on("NewRoundStarted", newRoundHandler);
+  lottery.on("TicketPriceChanged", priceHandler);
+  lottery.on("MaxTicketsChanged", maxHandler);
+  lottery.on("MaxTicketsPerUserChanged", limitHandler);
 
-//   return () => {
-//     lottery.off("WinnerDrawn", winnerHandler);
-//     lottery.off("NewRoundStarted", newRoundHandler);
-//     lottery.off("TicketPriceChanged", priceHandler);
-//     lottery.off("MaxTicketsChanged", maxHandler);
-//     lottery.off("MaxTicketsPerUserChanged", limitHandler);
-//   };
-// }, [contracts]);  // <-- This triggers when the contract is ready
+  return () => {
+    lottery.off("WinnerDrawn", winnerHandler);
+    lottery.off("NewRoundStarted", newRoundHandler);
+    lottery.off("TicketPriceChanged", priceHandler);
+    lottery.off("MaxTicketsChanged", maxHandler);
+    lottery.off("MaxTicketsPerUserChanged", limitHandler);
+  };
+}, [contracts]);  // <-- This triggers when the contract is ready
 
 
 
@@ -392,84 +400,105 @@ useEffect(() => {
   };
 
   //past event loader
-  // ⭐ Past Events Loader (batched - required for Alchemy Free Tier)
-const loadPastEvents = async () => {
-  if (!contracts?.lottery || !publicClient) return;
+//   // ⭐ Past Events Loader (batched - required for Alchemy Free Tier)
+// const loadPastEvents = async () => {
+//   if (!contracts?.lottery) return;
 
-  try {
-    const lottery = contracts.lottery;
+//   try {
+//     console.log("⏳ Loading PAST events...");
 
-    console.log("⏳ Loading PAST events...");
+//     // Use your RPC provider
+//     const currentBlock = BigInt(await rpcProvider.getBlockNumber());
 
-    // BigInt current block
-    const currentBlock = await publicClient.getBlockNumber();
+//     // Look back 2000 blocks (BigInt only)
+//     const lookback = 2000n;
 
-    // How far back you want to search (50k blocks)
-    const lookback = 2_000n;
+//     const fromBlock = currentBlock > lookback ? currentBlock - lookback : 0n;
 
-    const fromBlock = currentBlock > lookback ? currentBlock - lookback : 0n;
+//     // MUST be BigInt
+//     const batchSize = 8n;
 
-    // Free-tier limit: max 10 blocks per request
-    const batchSize = 8n;
+//     let winnerLogs = [];
+//     let roundLogs = [];
+//     let priceLogs = [];
+//     let maxLogs = [];
+//     let limitLogs = [];
 
-    // Local arrays to collect all logs
-    let winnerLogs = [];
-    let roundLogs = [];
-    let priceLogs = [];
-    let maxLogs = [];
-    let limitLogs = [];
+//     // Make sure start and end are BigInt
+//     for (let start = fromBlock; start <= currentBlock; start += batchSize) {
+//       const end = start + batchSize;
 
-    // Batch loop
-    for (let start = fromBlock; start <= currentBlock; start += batchSize) {
-      const end = start + batchSize;
+//       try {
+//         const wLogs = await lotteryHttp.queryFilter(
+//           "WinnerDrawn",
+//           start,
+//           end
+//         );
 
-      try {
-        const wLogs = await lottery.queryFilter("WinnerDrawn", start, end);
-        const rLogs = await lottery.queryFilter("NewRoundStarted", start, end);
-        const pLogs = await lottery.queryFilter("TicketPriceChanged", start, end);
-        const mLogs = await lottery.queryFilter("MaxTicketsChanged", start, end);
-        const lLogs = await lottery.queryFilter("MaxTicketsPerUserChanged", start, end);
+//         const rLogs = await lotteryHttp.queryFilter(
+//           "NewRoundStarted",
+//           start,
+//           end
+//         );
 
-        winnerLogs.push(...wLogs);
-        roundLogs.push(...rLogs);
-        priceLogs.push(...pLogs);
-        maxLogs.push(...mLogs);
-        limitLogs.push(...lLogs);
-      } catch (err) {
-        console.warn("⚠ Log batch failed:", err);
-      }
-    }
+//         const pLogs = await lotteryHttp.queryFilter(
+//           "TicketPriceChanged",
+//           start,
+//           end
+//         );
 
-    console.log("✅ Past events loaded!");
+//         const mLogs = await lotteryHttp.queryFilter(
+//           "MaxTicketsChanged",
+//           start,
+//           end
+//         );
 
-    // ---- Display Past Events ----
-    winnerLogs.forEach(log =>
-      notify(`🏆 Past Winner: ${log.args.winner.slice(0, 6)}... Round: ${log.args.roundId}`)
-    );
+//         const lLogs = await lotteryHttp.queryFilter(
+//           "MaxTicketsPerUserChanged",
+//           start,
+//           end
+//         );
 
-    roundLogs.forEach(log =>
-      notify(`📢 Past Round Started: Round ${log.args.newRoundId}`)
-    );
+//         winnerLogs.push(...wLogs);
+//         roundLogs.push(...rLogs);
+//         priceLogs.push(...pLogs);
+//         maxLogs.push(...mLogs);
+//         limitLogs.push(...lLogs);
+//       } catch (err) {
+//         console.warn("⚠ Log batch failed:", err);
+//       }
+//     }
 
-    priceLogs.forEach(log =>
-      notify(
-        `💲 Past Ticket Price: ${Number(
-          ethers.formatUnits(log.args.newPrice, 6)
-        )} USDC`
-      )
-    );
+//     console.log("✅ Past events loaded!");
 
-    maxLogs.forEach(log =>
-      notify(`📦 Past Max Tickets: ${log.args.newMax}`)
-    );
+//     // NOTIFY
+//     winnerLogs.forEach(log =>
+//       notify(`🏆 Past Winner: ${log.args.winner.slice(0, 6)}... Round: ${log.args.roundId}`)
+//     );
 
-    limitLogs.forEach(log =>
-      notify(`👤 Past User Limit: ${log.args.newLimit}`)
-    );
-  } catch (err) {
-    console.error("❌ Error loading past events:", err);
-  }
-};
+//     roundLogs.forEach(log =>
+//       notify(`📢 Past Round Started: Round ${log.args.newRoundId}`)
+//     );
+
+//     priceLogs.forEach(log =>
+//       notify(
+//         `💲 Past Ticket Price: ${Number(ethers.formatUnits(log.args.newPrice, 6))} USDC`
+//       )
+//     );
+
+//     maxLogs.forEach(log =>
+//       notify(`📦 Past Max Tickets: ${log.args.newMax}`)
+//     );
+
+//     limitLogs.forEach(log =>
+//       notify(`👤 Past User Limit: ${log.args.newLimit}`)
+//     );
+
+//   } catch (err) {
+//     console.error("❌ Error loading past events:", err);
+//   }
+// };
+
 
 
 
@@ -484,7 +513,7 @@ const loadPastEvents = async () => {
         getMsaAgreement,
         notifications,
         notify,
-        // loadPastEvents,
+        
       }}
     >
       {children}
