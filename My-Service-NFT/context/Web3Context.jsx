@@ -100,18 +100,134 @@ export const useWeb3 = () => useContext(Web3Context);
 function Web3Provider({ children }) {
   const { address: wagmiAddress, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient(); //  Get public provider for reading data
-
+  const publicClient = usePublicClient(); // for reading data
   const [address, setAddress] = useState(null);
   
-  // ⭐ Initialize with NULL, but we will load Read-Only immediately
+  // Initialize with NULL, but we will load Read-Only immediately
   const [contracts, setContracts] = useState({ lottery: null, nft: null });
   const [notifications, setNotifications] = useState([]);
-
+  //for ntification 
   const notify = (msg) => setNotifications((p) => [...p, msg]);
 
-  // 1. INITIALIZE READ-ONLY CONTRACTS (Shows data even if not connected)
- 
+  //for event using websocket
+
+  // ⭐ WebSocket provider (Alchemy)
+const wsProvider = new ethers.WebSocketProvider(
+  "wss://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO"
+);
+
+// ⭐ Lottery contract via WebSocket
+const lotteryWS = new ethers.Contract(
+  lotteryAddress,
+  lotteryAbi,
+  wsProvider
+);
+
+// ⭐ WebSocket LIVE event listeners
+useEffect(() => {
+  if (!lotteryWS) return;
+
+  console.log("🔌 WebSocket connected: Listening to LIVE events");
+
+  // ---- Handlers ----
+  const winnerHandler = (roundId, winner, tokenId) => {
+    notify(`🏆 LIVE Winner: ${winner.slice(0, 6)}... Round: ${roundId}`);
+  };
+
+  const newRoundHandler = (newRoundId) => {
+    notify(`🎉 LIVE New Round Started: Round ${newRoundId}`);
+  };
+
+  const priceHandler = (newPrice) => {
+    notify(
+      `💲 LIVE Ticket Price Updated: ${Number(
+        ethers.formatUnits(newPrice, 6)
+      )} USDC`
+    );
+  };
+
+  const maxHandler = (newMax) => {
+    notify(`📦 LIVE Max Tickets Changed: ${newMax}`);
+  };
+
+  const limitHandler = (newLimit) => {
+    notify(`👤 LIVE Max Tickets Per User: ${newLimit}`);
+  };
+
+  // ---- SUBSCRIBE ----
+  lotteryWS.on("WinnerDrawn", winnerHandler);
+  lotteryWS.on("NewRoundStarted", newRoundHandler);
+  lotteryWS.on("TicketPriceChanged", priceHandler);
+  lotteryWS.on("MaxTicketsChanged", maxHandler);
+  lotteryWS.on("MaxTicketsPerUserChanged", limitHandler);
+
+  // ---- CLEANUP ----
+  return () => {
+    console.log("🔌 WebSocket disconnected: Cleanup...");
+    lotteryWS.off("WinnerDrawn", winnerHandler);
+    lotteryWS.off("NewRoundStarted", newRoundHandler);
+    lotteryWS.off("TicketPriceChanged", priceHandler);
+    lotteryWS.off("MaxTicketsChanged", maxHandler);
+    lotteryWS.off("MaxTicketsPerUserChanged", limitHandler);
+  };
+}, []);
+
+useEffect(() => {
+  if (contracts?.lottery && publicClient) {
+    loadPastEvents();   // <- fetch past events
+  }
+}, [contracts, publicClient]);
+
+
+
+
+
+
+//live event handlers
+// useEffect(() => {
+//   if (!contracts?.lottery) return;
+
+//   const lottery = contracts.lottery;
+
+//   const winnerHandler = (roundId, winner, tokenId) => {
+//     notify(`🏆 Winner Selected: ${winner.slice(0, 6)}... Round: ${roundId}`);
+//   };
+
+//   const newRoundHandler = (newRoundId) => {
+//     notify(`🎉 New Round Started! Round ${newRoundId}`);
+//   };
+
+//   const priceHandler = (newPrice) => {
+//     notify(`💲 Ticket Price Updated: ${Number(ethers.formatUnits(newPrice, 6))} USDC`);
+//   };
+
+//   const maxHandler = (newMax) => {
+//     notify(`📦 Max Tickets Changed: ${newMax}`);
+//   };
+
+//   const limitHandler = (newLimit) => {
+//     notify(`👤 Max Tickets Per User Updated: ${newLimit}`);
+//   };
+//   console.log("📢 Subscribing to Lottery Events");
+
+//   lottery.on("WinnerDrawn", winnerHandler);
+//   lottery.on("NewRoundStarted", newRoundHandler);
+//   lottery.on("TicketPriceChanged", priceHandler);
+//   lottery.on("MaxTicketsChanged", maxHandler);
+//   lottery.on("MaxTicketsPerUserChanged", limitHandler);
+
+//   return () => {
+//     lottery.off("WinnerDrawn", winnerHandler);
+//     lottery.off("NewRoundStarted", newRoundHandler);
+//     lottery.off("TicketPriceChanged", priceHandler);
+//     lottery.off("MaxTicketsChanged", maxHandler);
+//     lottery.off("MaxTicketsPerUserChanged", limitHandler);
+//   };
+// }, [contracts]);  // <-- This triggers when the contract is ready
+
+
+
+
   useEffect(() => {
     
     if (address && contracts.lottery && contracts.lottery.runner) return;
@@ -228,7 +344,7 @@ function Web3Provider({ children }) {
 
     // DO NOT await here — mobile killer
     publicClient.waitForTransactionReceipt({ hash: tx.hash }).then(() => {
-      notify("🎉 Ticket Purchased Successfully!");
+      // notify("🎉 Ticket Purchased Successfully!");
       localStorage.removeItem("pendingBuy");
     });
 
@@ -275,6 +391,89 @@ function Web3Provider({ children }) {
     }
   };
 
+  //past event loader
+  // ⭐ Past Events Loader (batched - required for Alchemy Free Tier)
+const loadPastEvents = async () => {
+  if (!contracts?.lottery || !publicClient) return;
+
+  try {
+    const lottery = contracts.lottery;
+
+    console.log("⏳ Loading PAST events...");
+
+    // BigInt current block
+    const currentBlock = await publicClient.getBlockNumber();
+
+    // How far back you want to search (50k blocks)
+    const lookback = 50_000n;
+
+    const fromBlock = currentBlock > lookback ? currentBlock - lookback : 0n;
+
+    // Free-tier limit: max 10 blocks per request
+    const batchSize = 8n;
+
+    // Local arrays to collect all logs
+    let winnerLogs = [];
+    let roundLogs = [];
+    let priceLogs = [];
+    let maxLogs = [];
+    let limitLogs = [];
+
+    // Batch loop
+    for (let start = fromBlock; start <= currentBlock; start += batchSize) {
+      const end = start + batchSize;
+
+      try {
+        const wLogs = await lottery.queryFilter("WinnerDrawn", start, end);
+        const rLogs = await lottery.queryFilter("NewRoundStarted", start, end);
+        const pLogs = await lottery.queryFilter("TicketPriceChanged", start, end);
+        const mLogs = await lottery.queryFilter("MaxTicketsChanged", start, end);
+        const lLogs = await lottery.queryFilter("MaxTicketsPerUserChanged", start, end);
+
+        winnerLogs.push(...wLogs);
+        roundLogs.push(...rLogs);
+        priceLogs.push(...pLogs);
+        maxLogs.push(...mLogs);
+        limitLogs.push(...lLogs);
+      } catch (err) {
+        console.warn("⚠ Log batch failed:", err);
+      }
+    }
+
+    console.log("✅ Past events loaded!");
+
+    // ---- Display Past Events ----
+    winnerLogs.forEach(log =>
+      notify(`🏆 Past Winner: ${log.args.winner.slice(0, 6)}... Round: ${log.args.roundId}`)
+    );
+
+    roundLogs.forEach(log =>
+      notify(`📢 Past Round Started: Round ${log.args.newRoundId}`)
+    );
+
+    priceLogs.forEach(log =>
+      notify(
+        `💲 Past Ticket Price: ${Number(
+          ethers.formatUnits(log.args.newPrice, 6)
+        )} USDC`
+      )
+    );
+
+    maxLogs.forEach(log =>
+      notify(`📦 Past Max Tickets: ${log.args.newMax}`)
+    );
+
+    limitLogs.forEach(log =>
+      notify(`👤 Past User Limit: ${log.args.newLimit}`)
+    );
+  } catch (err) {
+    console.error("❌ Error loading past events:", err);
+  }
+};
+
+
+
+
   return (
     <Web3Context.Provider
       value={{
@@ -285,6 +484,7 @@ function Web3Provider({ children }) {
         getMsaAgreement,
         notifications,
         notify,
+        // loadPastEvents,
       }}
     >
       {children}

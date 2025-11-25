@@ -4,6 +4,7 @@ import React, { useState ,useEffect} from "react";
 import { useWeb3 } from "../context/Web3Context";
 import { useNavigate } from "react-router-dom";
 import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
+
 //components
 import { ProfileCard,
   ProgressBar,
@@ -23,7 +24,7 @@ import { ProfileCard,
 
 const App = () => {
     //smart contracts integration 
-    const {buyTicket,address,getLotteryInfo,contracts,notify}=useWeb3();
+    const {address,getLotteryInfo,contracts,loadPastEvents}=useWeb3();
     const { openConnectModal } = useConnectModal();
     const [showBuyPopup, setShowBuyPopup] = useState(false);
     const [lotteryData, setLotteryData] = useState([]);
@@ -73,7 +74,8 @@ const handleServiceClick = (data) => {
   setServicePopupData(data);
   setShowServicePopup(true);
 };
-// Event listeners for lottery contract
+
+
 
 
 
