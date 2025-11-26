@@ -112,82 +112,7 @@ function Web3Provider({ children }) {
   //
   const [lastShownRound, setLastShownRound] = useState(null);
 
-  //for event using websocket
-
-//   // ⭐ WebSocket provider (Alchemy)
-// const wsProvider = new ethers.WebSocketProvider(
-//   "wss://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO"
-// );
-
-// // // ⭐ Lottery contract via WebSocket
-// const lotteryWS = new ethers.Contract(
-//   lotteryAddress,
-//   lotteryAbi,
-//   wsProvider
-// );
-// const rpcProvider = new ethers.JsonRpcProvider("https://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO");
-
-// // ⭐ Read-only contract for past event lookup
-// const lotteryHttp = new ethers.Contract(
-//   lotteryAddress,
-//   lotteryAbi,
-//   rpcProvider
-// );
-
-// // ⭐ WebSocket LIVE event listeners
-// useEffect(() => {
-//   if (!lotteryWS) return;
-
-//   console.log("🔌 WebSocket connected: Listening to LIVE events");
-
-//   // ---- Handlers ----
-//   const winnerHandler = (roundId, winner, tokenId) => {
-//     notify(`🏆 LIVE Winner: ${winner.slice(0, 6)}... Round: ${roundId}`);
-//   };
-
-//   const newRoundHandler = (newRoundId) => {
-//     notify(`🎉 LIVE New Round Started: Round ${newRoundId}`);
-//   };
-
-//   const priceHandler = (newPrice) => {
-//     notify(
-//       `💲 LIVE Ticket Price Updated: ${Number(
-//         ethers.formatUnits(newPrice, 6)
-//       )} USDC`
-//     );
-//   };
-
-//   const maxHandler = (newMax) => {
-//     notify(`📦 LIVE Max Tickets Changed: ${newMax}`);
-//   };
-
-//   const limitHandler = (newLimit) => {
-//     notify(`👤 LIVE Max Tickets Per User: ${newLimit}`);
-//   };
-
-//   // ---- SUBSCRIBE ----
-//   lotteryWS.on("WinnerDrawn", winnerHandler);
-//   lotteryWS.on("NewRoundStarted", newRoundHandler);
-//   lotteryWS.on("TicketPriceChanged", priceHandler);
-//   lotteryWS.on("MaxTicketsChanged", maxHandler);
-//   lotteryWS.on("MaxTicketsPerUserChanged", limitHandler);
-
-//   // ---- CLEANUP ----
-//   return () => {
-//     console.log("🔌 WebSocket disconnected: Cleanup...");
-//     lotteryWS.off("WinnerDrawn", winnerHandler);
-//     lotteryWS.off("NewRoundStarted", newRoundHandler);
-//     lotteryWS.off("TicketPriceChanged", priceHandler);
-//     lotteryWS.off("MaxTicketsChanged", maxHandler);
-//     lotteryWS.off("MaxTicketsPerUserChanged", limitHandler);
-//   };
-// }, []);
-
-// useEffect(() => {
-//   if (contracts?.lottery && publicClient) {
-//     loadPastEvents();   // <- fetch past events
-//   }
-// }, [contracts, publicClient]);
+  
 
 
 
@@ -195,6 +120,7 @@ function Web3Provider({ children }) {
 
 
 //check if the winner is drawn through backend and notigy the user
+//for past users
 
 useEffect(() => {
   async function checkWinner() {
@@ -204,6 +130,7 @@ useEffect(() => {
     const data = await res.json();
 
     if (!data.success) return;
+    console.log("Winner Status:", data);
 
     const { currentRound, lastWinnerRound, winnerAddress } = data;
 
@@ -232,15 +159,15 @@ useEffect(() => {
 
 
 
-
+//event listerners for lottery contract
 useEffect(() => {
   if (!contracts?.lottery) return;
 
   const lottery = contracts.lottery;
 
-  const winnerHandler = (roundId, winner, tokenId) => {
-    notify(`🏆 Winner Selected: ${winner.slice(0, 6)}... Round: ${roundId}`);
-  };
+  // const winnerHandler = (roundId, winner, tokenId) => {
+  //   notify(`🏆 Winner Selected: ${winner.slice(0, 6)}... Round: ${roundId}`);
+  // };
 
   const newRoundHandler = (newRoundId) => {
     notify(`🎉 New Round Started! Round ${newRoundId}`);
@@ -259,14 +186,14 @@ useEffect(() => {
   };
   console.log("📢 Subscribing to Lottery Events");
 
-  lottery.on("WinnerDrawn", winnerHandler);
+  // lottery.on("WinnerDrawn", winnerHandler);
   lottery.on("NewRoundStarted", newRoundHandler);
   lottery.on("TicketPriceChanged", priceHandler);
   lottery.on("MaxTicketsChanged", maxHandler);
   lottery.on("MaxTicketsPerUserChanged", limitHandler);
 
   return () => {
-    lottery.off("WinnerDrawn", winnerHandler);
+    // lottery.off("WinnerDrawn", winnerHandler);
     lottery.off("NewRoundStarted", newRoundHandler);
     lottery.off("TicketPriceChanged", priceHandler);
     lottery.off("MaxTicketsChanged", maxHandler);
