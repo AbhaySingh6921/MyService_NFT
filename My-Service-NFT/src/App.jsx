@@ -42,17 +42,17 @@ const App = () => {
     };
 
 
-useEffect(() => {
-  if (!address) return;
+// useEffect(() => {
+//   if (!address) return;
 
-  const already = sessionStorage.getItem("wallet-reloaded");
+//   const already = sessionStorage.getItem("wallet-reloaded");
 
-  if (!already) {
-    sessionStorage.setItem("wallet-reloaded", "true");
-    window.location.reload();
-  }
+//   if (!already) {
+//     sessionStorage.setItem("wallet-reloaded", "true");
+//     window.location.reload();
+//   }
   
-}, [address]);
+// }, [address]);
 
     //for loterry data fetch 
 useEffect(() => {

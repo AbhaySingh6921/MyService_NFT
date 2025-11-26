@@ -250,12 +250,14 @@ useEffect(() => {
 // -----------------------------------------------------
 // 📌 MOBILE-SAFE PENDING TRANSACTION RECOVERY SYSTEM
 // -----------------------------------------------------
+let buyLock = false;
+
 useEffect(() => {
   let interval;
 
   async function checkPendingBuy() {
     const saved = localStorage.getItem("pendingBuy");
-    if (!saved) return; // No pending tx
+    if (!saved || buyLock) return;
 
     const data = JSON.parse(saved);
     const { hash, name, email, amount, wallet } = data;
@@ -265,16 +267,19 @@ useEffect(() => {
     try {
       console.log("⏳ Checking pending buy TX:", hash);
 
-      // Wait for blockchain confirmation
       const receipt = await publicClient.waitForTransactionReceipt({
         hash,
-        timeout: 1000 * 60 * 5, // 5 min safety
+        timeout: 1000 * 60 * 5,
       });
 
       if (receipt.status === "success") {
+
+        // PREVENT MULTIPLE CALLS
+        if (buyLock) return;
+        buyLock = true;
+
         console.log("✅ TX confirmed! Sending to backend...");
 
-        // 🔥 VERY IMPORTANT: Save to backend AFTER confirmation
         await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
           name,
           email,
@@ -285,20 +290,18 @@ useEffect(() => {
 
         notify("🎉 Ticket Purchased Successfully!");
 
-        // Clear pending state
         localStorage.removeItem("pendingBuy");
         clearInterval(interval);
       }
     } catch (err) {
-      console.log("⏳ Waiting for confirmation… (mobile-safe retry)");
+      console.log("⏳ Waiting for confirmation…");
     }
   }
 
-  // Every 2 seconds, check if the TX confirmed
   interval = setInterval(checkPendingBuy, 2000);
-
   return () => clearInterval(interval);
 }, [publicClient]);
+
 
 
 
@@ -333,10 +336,10 @@ useEffect(() => {
     // notify("⏳ Transaction Sent…");
 
     // DO NOT await here — mobile killer
-    publicClient.waitForTransactionReceipt({ hash: tx.hash }).then(() => {
-      // notify("🎉 Ticket Purchased Successfully!");
-      localStorage.removeItem("pendingBuy");
-    });
+    // publicClient.waitForTransactionReceipt({ hash: tx.hash }).then(() => {
+    //   // notify("🎉 Ticket Purchased Successfully!");
+    //   localStorage.removeItem("pendingBuy");
+    // });
 
     return { success: true };
 
