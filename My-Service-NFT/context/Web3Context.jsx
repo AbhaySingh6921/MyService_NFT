@@ -141,12 +141,12 @@ useEffect(() => {
     if (lastShownRound === lastWinnerRound) return;
 
     //  Notify all users
-    // notify(`🏆 Round ${lastWinnerRound} Winner: ${winnerAddress.slice(0,15)}...`);
+    // notify(` Round ${lastWinnerRound} Winner: ${winnerAddress.slice(0,15)}...`);
 
     // Mark as shown
     setLastShownRound(lastWinnerRound);
 
-    // 🔥 If current user is the winner → CONFETTI
+    //  If current user is the winner → CONFETTI
     if (winnerAddress.toLowerCase() === address.toLowerCase()) {
       notify("🎉 YOU WON THE LOTTERY!! 🎉");
       launchConfetti();
@@ -203,7 +203,7 @@ useEffect(() => {
     lottery.off("MaxTicketsChanged", maxHandler);
     lottery.off("MaxTicketsPerUserChanged", limitHandler);
   };
-}, [contracts]);  // <-- This triggers when the contract is ready
+}, [contracts]);  
 
 
 
