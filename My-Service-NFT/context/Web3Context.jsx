@@ -102,20 +102,22 @@ function Web3Provider({ children }) {
   const { address: wagmiAddress, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient(); // for reading data
-  const [address, setAddress] = useState(null);
+  // const [address, setAddress] = useState(null);
   
   // Initialize with NULL, but we will load Read-Only immediately
   const [contracts, setContracts] = useState({ lottery: null, nft: null });
   const [notifications, setNotifications] = useState([]);
   //for ntification 
   const notify = (msg) => setNotifications((p) => [...p, msg]);
+  const address = wagmiAddress; // Always live synced
+
   //
   const [lastShownRound, setLastShownRound] = useState(null);
 
 
-  useEffect(() => {
-  setAddress(wagmiAddress); // instant sync with wallet
-}, [wagmiAddress]);
+//   useEffect(() => {
+//   setAddress(wagmiAddress); // instant sync with wallet
+// }, [wagmiAddress]);
 
 
   
@@ -231,7 +233,7 @@ useEffect(() => {
   async function loadSigner() {
     if (!isConnected || !walletClient) return;
 
-    setAddress(wagmiAddress);
+    // setAddress(wagmiAddress);
 
     // FIX: Use walletClient.transport instead of walletClient
     const provider = new ethers.BrowserProvider(walletClient.transport);
@@ -393,7 +395,7 @@ useEffect(() => {
   return (
     <Web3Context.Provider
       value={{
-        address,
+         address: wagmiAddress, 
         contracts,
         buyTicket,
         getLotteryInfo,
