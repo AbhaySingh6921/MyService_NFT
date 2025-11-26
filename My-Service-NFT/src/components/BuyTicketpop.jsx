@@ -271,7 +271,7 @@ export function BuyTicketpop({ onClose }) {
         >
           {loading
   ? "Processing..."
-  : !isConnected || !contextAddress
+  : !isConnected ||  !contextAddress
   ? "Connect Wallet"
   : "Buy Now"}
 

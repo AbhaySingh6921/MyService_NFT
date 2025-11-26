@@ -186,7 +186,7 @@ const handleServiceClick = (data) => {
               return;
             }
 
-            navigate("/buyticket");
+            // navigate("/buyticket");
             setShowBuyPopup(true);
           }}
         >
