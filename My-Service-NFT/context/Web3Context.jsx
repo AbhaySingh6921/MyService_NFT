@@ -247,12 +247,15 @@ useEffect(() => {
 
 
  
- useEffect(() => {
+// -----------------------------------------------------
+// 📌 MOBILE-SAFE PENDING TRANSACTION RECOVERY SYSTEM
+// -----------------------------------------------------
+useEffect(() => {
   let interval;
 
-  async function checkPending() {
+  async function checkPendingBuy() {
     const saved = localStorage.getItem("pendingBuy");
-    if (!saved) return;
+    if (!saved) return; // No pending tx
 
     const data = JSON.parse(saved);
     const { hash, name, email, amount, wallet } = data;
@@ -260,36 +263,43 @@ useEffect(() => {
     if (!hash) return;
 
     try {
+      console.log("⏳ Checking pending buy TX:", hash);
+
       // Wait for blockchain confirmation
       const receipt = await publicClient.waitForTransactionReceipt({
         hash,
-        timeout: 1000 * 60 * 5 // 5 min safety
+        timeout: 1000 * 60 * 5, // 5 min safety
       });
 
       if (receipt.status === "success") {
-        // Save to DB AFTER confirmation
-        // await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
-        //   name,
-        //   email,
-        //   walletAddress: wallet,
-        //   amount,
-        //   timestamp: Date.now(),
-        // });
+        console.log("✅ TX confirmed! Sending to backend...");
 
-        notify("🎉 Transaction Confirmed!");
+        // 🔥 VERY IMPORTANT: Save to backend AFTER confirmation
+        await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
+          name,
+          email,
+          walletAddress: wallet,
+          amount,
+          timestamp: Date.now(),
+        });
+
+        notify("🎉 Ticket Purchased Successfully!");
+
+        // Clear pending state
         localStorage.removeItem("pendingBuy");
         clearInterval(interval);
       }
     } catch (err) {
-      console.log("⏳ Waiting… (mobile safe)");
+      console.log("⏳ Waiting for confirmation… (mobile-safe retry)");
     }
   }
 
-  // Retry every 2 seconds until success
-  interval = setInterval(checkPending, 2000);
+  // Every 2 seconds, check if the TX confirmed
+  interval = setInterval(checkPendingBuy, 2000);
 
   return () => clearInterval(interval);
 }, [publicClient]);
+
 
 
 
@@ -320,7 +330,7 @@ useEffect(() => {
       timestamp: Date.now(),
     }));
 
-    notify("⏳ Transaction Sent…");
+    // notify("⏳ Transaction Sent…");
 
     // DO NOT await here — mobile killer
     publicClient.waitForTransactionReceipt({ hash: tx.hash }).then(() => {

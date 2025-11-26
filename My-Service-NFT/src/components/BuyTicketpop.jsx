@@ -73,51 +73,41 @@ export function BuyTicketpop({ onClose }) {
   // -----------------------------------------------------------
   // 🔥 FIX: HANDLE BUY
   // -----------------------------------------------------------
-    const handleBuy = async () => {
-    try {
-      if (!isConnected) {
-        notify("⚠ Connect wallet first.");
-        if (openConnectModal) openConnectModal();
-        return;
-      }
-
-      if (!name || !email) {
-        notify("⚠ Name & Email required.");
-        return;
-      }
-
-      setLoading(true);
-
-      const res = await buyTicket(amount, { name, email });
-
-      if (!res.success) {
-        setLoading(false);
-        return;
-      }
-
-      // Backend AFTER tx sent
-      await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
-        name,
-        email,
-        walletAddress: contextAddress.toLowerCase(),
-        amount,
-        timestamp: Date.now(),
-      });
-
-      notify("⏳ Waiting for confirmation...");
-
-      onClose();
-
-      // Reload after backend (mobile safe)
-      setTimeout(() => window.location.reload(), 700);
-
-    } catch (err) {
-      console.error("Buy Error:", err);
-      notify("❌ Transaction failed");
-    } finally {
-      setLoading(false);
+  const handleBuy = async () => {
+  try {
+    if (!isConnected) {
+      notify("⚠ Connect wallet first.");
+      if (openConnectModal) openConnectModal();
+      return;
     }
-  };
+
+    if (!name || !email) {
+      notify("⚠ Name & Email required.");
+      return;
+    }
+
+    setLoading(true);
+    notify("⏳ Sending transaction...");
+
+    const res = await buyTicket(amount, { name, email });
+
+    if (!res.success) {
+      setLoading(false);
+      return;
+    }
+
+    notify("⏳ Waiting for confirmation...");
+
+    onClose();
+
+  } catch (err) {
+    console.error("Buy Error:", err);
+    notify("❌ Transaction failed");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
 

@@ -81,6 +81,12 @@ const handleServiceClick = (data) => {
 
 // ----Service Card Info----
   const serviceData = [
+    {
+    imageUrl: "/serviceCards/Personal&Domestic.png",
+    title: "Personal & Domestic",
+    subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
+    driveLink: "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view?usp=drivesdk ",
+  },
   {
     imageUrl: "/serviceCards/Professional&Web3Services.png",
     title: "Professional & Web3 Services",
@@ -93,12 +99,7 @@ const handleServiceClick = (data) => {
     subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
     driveLink: "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view?usp=drivesdk ",
   },
-  {
-    imageUrl: "/serviceCards/Personal&Domestic.png",
-    title: "Personal & Domestic",
-    subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
-    driveLink: "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view?usp=drivesdk ",
-  },
+  
 ];
 
 
