@@ -120,7 +120,7 @@ function Web3Provider({ children }) {
 
 
 //check if the winner is drawn through backend and notigy the user
-//for past users
+//for offline users
 
 useEffect(() => {
   async function checkWinner() {
@@ -134,14 +134,14 @@ useEffect(() => {
 
     const { currentRound, lastWinnerRound, winnerAddress } = data;
 
-    // ❌ No winner for the new round yet
+    //  No winner for the new round yet
     if (currentRound !== lastWinnerRound) return;
 
-    // ❌ Already shown for this round
+    //  Already shown for this round
     if (lastShownRound === lastWinnerRound) return;
 
-    // 🔥 Notify all users
-    notify(`🏆 Round ${lastWinnerRound} Winner: ${winnerAddress.slice(0,15)}...`);
+    //  Notify all users
+    // notify(`🏆 Round ${lastWinnerRound} Winner: ${winnerAddress.slice(0,15)}...`);
 
     // Mark as shown
     setLastShownRound(lastWinnerRound);
@@ -150,6 +150,10 @@ useEffect(() => {
     if (winnerAddress.toLowerCase() === address.toLowerCase()) {
       notify("🎉 YOU WON THE LOTTERY!! 🎉");
       launchConfetti();
+    }
+    else{
+      //  Notify all users
+    notify(`🏆 Round ${lastWinnerRound} Winner: ${winnerAddress.slice(0,15)}...`);
     }
   }
 
