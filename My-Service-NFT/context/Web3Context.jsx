@@ -363,6 +363,7 @@ useEffect(() => {
         contracts.lottery.getTotalTicketsSold(),
         contracts.lottery.ticketPrice(),
         contracts.lottery.maxTickets(),
+        
       ]);
 
       return {

@@ -75,7 +75,7 @@ export function BuyTicketpop({ onClose }) {
   // -----------------------------------------------------------
   const handleBuy = async () => {
   try {
-    if (!isConnected || !wagmiAddress) {
+    if (!isConnected || !contextAddress ) {
   notify("⚠ Connect wallet first.");
   openConnectModal?.();
   return;
@@ -271,7 +271,7 @@ export function BuyTicketpop({ onClose }) {
         >
           {loading
   ? "Processing..."
-  : !isConnected
+  : !isConnected || !contextAddress
   ? "Connect Wallet"
   : "Buy Now"}
 
