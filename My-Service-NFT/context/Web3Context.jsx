@@ -198,21 +198,29 @@ function Web3Provider({ children }) {
 
 useEffect(() => {
   async function checkWinner() {
-    const res = await fetch("https://myservice-nft-1.onrender.com/latest-winner");
+    if (!address) return;
+
+    const res = await fetch("https://myservice-nft-1.onrender.com/winner-status");
     const data = await res.json();
 
-    if (!data.success || !data.winnerAddress) return;
+    if (!data.success) return;
 
-    // If this round was already shown → skip
-    if (lastShownRound === data.roundId) return;
+    const { currentRound, lastWinnerRound, winnerAddress } = data;
 
-    // Show notification
-    notify(`🏆 Round ${data.roundId} Winner: ${data.winnerAddress.slice(0,15)}...`);
+    // ❌ No winner for the new round yet
+    if (currentRound !== lastWinnerRound) return;
 
-    setLastShownRound(data.roundId);
+    // ❌ Already shown for this round
+    if (lastShownRound === lastWinnerRound) return;
 
-    // If winner = current user
-    if (address && data.winnerAddress.toLowerCase() === address.toLowerCase()) {
+    // 🔥 Notify all users
+    notify(`🏆 Round ${lastWinnerRound} Winner: ${winnerAddress.slice(0,15)}...`);
+
+    // Mark as shown
+    setLastShownRound(lastWinnerRound);
+
+    // 🔥 If current user is the winner → CONFETTI
+    if (winnerAddress.toLowerCase() === address.toLowerCase()) {
       notify("🎉 YOU WON THE LOTTERY!! 🎉");
       launchConfetti();
     }
@@ -220,6 +228,7 @@ useEffect(() => {
 
   checkWinner();
 }, [address, lastShownRound]);
+
 
 
 
