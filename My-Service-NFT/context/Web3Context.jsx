@@ -198,7 +198,7 @@ function Web3Provider({ children }) {
 
 useEffect(() => {
   async function checkWinner() {
-    const res = await fetch("http://localhost:5000/latest-winner");
+    const res = await fetch("https://myservice-nft-1.onrender.com/latest-winner");
     const data = await res.json();
 
     if (!data.success || !data.winnerAddress) return;
