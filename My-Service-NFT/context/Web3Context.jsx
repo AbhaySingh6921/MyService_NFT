@@ -5,6 +5,7 @@ import { ethers } from "ethers";
 import Toast from "../src/components/Toast.jsx";
 import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 import axios from "axios";
+import { launchConfetti } from "../lib/confetti";
 
 import {
   lotteryAddress,
@@ -108,6 +109,8 @@ function Web3Provider({ children }) {
   const [notifications, setNotifications] = useState([]);
   //for ntification 
   const notify = (msg) => setNotifications((p) => [...p, msg]);
+  //
+  const [lastShownRound, setLastShownRound] = useState(null);
 
   //for event using websocket
 
@@ -191,7 +194,36 @@ function Web3Provider({ children }) {
 
 
 
-//live event handlers
+//check if the winner is drawn through backend and notigy the user
+
+useEffect(() => {
+  async function checkWinner() {
+    const res = await fetch("http://localhost:5000/latest-winner");
+    const data = await res.json();
+
+    if (!data.success || !data.winnerAddress) return;
+
+    // If this round was already shown → skip
+    if (lastShownRound === data.roundId) return;
+
+    // Show notification
+    notify(`🏆 Round ${data.roundId} Winner: ${data.winnerAddress.slice(0,15)}...`);
+
+    setLastShownRound(data.roundId);
+
+    // If winner = current user
+    if (address && data.winnerAddress.toLowerCase() === address.toLowerCase()) {
+      notify("🎉 YOU WON THE LOTTERY!! 🎉");
+      launchConfetti();
+    }
+  }
+
+  checkWinner();
+}, [address, lastShownRound]);
+
+
+
+
 useEffect(() => {
   if (!contracts?.lottery) return;
 
@@ -399,108 +431,7 @@ useEffect(() => {
     }
   };
 
-  //past event loader
-//   // ⭐ Past Events Loader (batched - required for Alchemy Free Tier)
-// const loadPastEvents = async () => {
-//   if (!contracts?.lottery) return;
-
-//   try {
-//     console.log("⏳ Loading PAST events...");
-
-//     // Use your RPC provider
-//     const currentBlock = BigInt(await rpcProvider.getBlockNumber());
-
-//     // Look back 2000 blocks (BigInt only)
-//     const lookback = 2000n;
-
-//     const fromBlock = currentBlock > lookback ? currentBlock - lookback : 0n;
-
-//     // MUST be BigInt
-//     const batchSize = 8n;
-
-//     let winnerLogs = [];
-//     let roundLogs = [];
-//     let priceLogs = [];
-//     let maxLogs = [];
-//     let limitLogs = [];
-
-//     // Make sure start and end are BigInt
-//     for (let start = fromBlock; start <= currentBlock; start += batchSize) {
-//       const end = start + batchSize;
-
-//       try {
-//         const wLogs = await lotteryHttp.queryFilter(
-//           "WinnerDrawn",
-//           start,
-//           end
-//         );
-
-//         const rLogs = await lotteryHttp.queryFilter(
-//           "NewRoundStarted",
-//           start,
-//           end
-//         );
-
-//         const pLogs = await lotteryHttp.queryFilter(
-//           "TicketPriceChanged",
-//           start,
-//           end
-//         );
-
-//         const mLogs = await lotteryHttp.queryFilter(
-//           "MaxTicketsChanged",
-//           start,
-//           end
-//         );
-
-//         const lLogs = await lotteryHttp.queryFilter(
-//           "MaxTicketsPerUserChanged",
-//           start,
-//           end
-//         );
-
-//         winnerLogs.push(...wLogs);
-//         roundLogs.push(...rLogs);
-//         priceLogs.push(...pLogs);
-//         maxLogs.push(...mLogs);
-//         limitLogs.push(...lLogs);
-//       } catch (err) {
-//         console.warn("⚠ Log batch failed:", err);
-//       }
-//     }
-
-//     console.log("✅ Past events loaded!");
-
-//     // NOTIFY
-//     winnerLogs.forEach(log =>
-//       notify(`🏆 Past Winner: ${log.args.winner.slice(0, 6)}... Round: ${log.args.roundId}`)
-//     );
-
-//     roundLogs.forEach(log =>
-//       notify(`📢 Past Round Started: Round ${log.args.newRoundId}`)
-//     );
-
-//     priceLogs.forEach(log =>
-//       notify(
-//         `💲 Past Ticket Price: ${Number(ethers.formatUnits(log.args.newPrice, 6))} USDC`
-//       )
-//     );
-
-//     maxLogs.forEach(log =>
-//       notify(`📦 Past Max Tickets: ${log.args.newMax}`)
-//     );
-
-//     limitLogs.forEach(log =>
-//       notify(`👤 Past User Limit: ${log.args.newLimit}`)
-//     );
-
-//   } catch (err) {
-//     console.error("❌ Error loading past events:", err);
-//   }
-// };
-
-
-
+  
 
 
   return (
