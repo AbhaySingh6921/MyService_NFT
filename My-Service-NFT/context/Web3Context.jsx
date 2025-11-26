@@ -112,6 +112,12 @@ function Web3Provider({ children }) {
   //
   const [lastShownRound, setLastShownRound] = useState(null);
 
+
+  useEffect(() => {
+  setAddress(wagmiAddress); // instant sync with wallet
+}, [wagmiAddress]);
+
+
   
 
 
@@ -159,10 +165,6 @@ useEffect(() => {
 
   checkWinner();
 }, [address, lastShownRound]);
-
-
-
-
 //event listerners for lottery contract
 useEffect(() => {
   if (!contracts?.lottery) return;

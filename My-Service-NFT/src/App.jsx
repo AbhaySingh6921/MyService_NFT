@@ -4,6 +4,8 @@ import React, { useState ,useEffect} from "react";
 import { useWeb3 } from "../context/Web3Context";
 import { useNavigate } from "react-router-dom";
 import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
+import { useAccount } from "wagmi";
+
 
 //components
 import { ProfileCard,
@@ -25,6 +27,7 @@ import { ProfileCard,
 const App = () => {
     //smart contracts integration 
     const {address,getLotteryInfo,contracts}=useWeb3();
+    const { address: wagmiAddress, isConnected } = useAccount();
     const { openConnectModal } = useConnectModal();
     const [showBuyPopup, setShowBuyPopup] = useState(false);
     const [lotteryData, setLotteryData] = useState([]);
@@ -33,6 +36,8 @@ const App = () => {
     const [showServicePopup, setShowServicePopup] = useState(false);
     const [servicePopupData, setServicePopupData] = useState(null);
     const [connecting, setConnecting] = useState(false);
+    
+
 
     const navigate = useNavigate();
 
@@ -176,13 +181,11 @@ const handleServiceClick = (data) => {
       <HeroButton
           toLink="/buyticket"
           onClick={async () => {
-            if (!address) {
-              // ⭐ FIXED: Use openConnectModal provided by RainbowKit
-              if (openConnectModal) {
-                openConnectModal();
-              }
+            if (!isConnected || !wagmiAddress) {
+              openConnectModal?.();
               return;
             }
+
             navigate("/buyticket");
             setShowBuyPopup(true);
           }}
