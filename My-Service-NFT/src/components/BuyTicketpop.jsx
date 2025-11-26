@@ -253,7 +253,9 @@ export function BuyTicketpop({ onClose }) {
           <div className="flex flex-col items-center">
             <span className="text-white/50">You Can Buy</span>
             <span className="text-[#9C37FD] font-semibold">
-            {remainingForUser}
+              {remainingTickets < remainingForUser
+      ? remainingTickets
+      : remainingForUser}
             </span>
           </div>
 
