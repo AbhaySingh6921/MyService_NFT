@@ -640,8 +640,14 @@ useEffect(() => {
       console.log("⏳ Still waiting…");
     }
   }
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      console.log("🔄 Chrome active — running pending check instantly");
+      checkPendingBuy();
+    }
+  });
 
-  interval = setInterval(checkPendingBuy, 2000);
+  interval = setInterval(checkPendingBuy, 3000);
   return () => clearInterval(interval);
 }, [publicClient]);
 
@@ -656,6 +662,7 @@ useEffect(() => {
 
       const tx = await contracts.lottery.buyTickets(amount);
       notify("⏳ Transaction sent. Waiting for confirmation…");
+      onClose(); // Close the buy popup
 
       localStorage.setItem(
         "pendingBuy",
