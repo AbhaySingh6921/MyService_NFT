@@ -358,6 +358,320 @@
 
 ///----------------------------------
 
+// "use client";
+
+// import React, { useState, useEffect } from "react";
+// import { useWeb3 } from "../context/Web3Context";
+// import { useNavigate } from "react-router-dom";
+
+// // RainbowKit + Wagmi
+// import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
+// import { useAccount } from "wagmi";
+
+// // Components
+// import {
+//   ProfileCard,
+//   ProgressBar,
+//   ServiceCard,
+//   Agreement,
+//   HeroButton,
+//   BuyTicketpop,
+//   ParticipantsPopup,
+//   TicketsPopup,
+//   ServicePopup,
+// } from "./components/ComponentIndex.js";
+// // import { isMobile } from "../lib/isMobile";
+
+
+
+
+// const App = () => {
+//   // Smart-contract logic
+//   const { getLotteryInfo, contracts } = useWeb3();
+
+//   // Wallet state
+//   const { address: wagmiAddress, isConnected } = useAccount();
+//   const { openConnectModal } = useConnectModal();
+
+//   // UI state
+//   const [showBuyPopup, setShowBuyPopup] = useState(false);
+//   const [showParticipants, setShowParticipants] = useState(false);
+//   const [showTicketsPopup, setShowTicketsPopup] = useState(false);
+//   const [showServicePopup, setShowServicePopup] = useState(false);
+//   const [servicePopupData, setServicePopupData] = useState(null);
+
+//   const [lotteryData, setLotteryData] = useState({});
+//   const navigate = useNavigate();
+
+//   const dummy = { maxTickets: 1000, totalSold: 450 };
+
+
+//    const [rerender, setRerender] = useState(0);
+
+//   // 🔥 Force re-render when wallet connects
+//   useEffect(() => {
+//     setRerender((x) => x + 1);
+//   }, [wagmiAddress, isConnected]);
+
+//   // --------------------------------------------------------------------
+//   // LOAD LOTTERY DATA ONLY WHEN WALLET + CONTRACT READY
+//   // --------------------------------------------------------------------
+//   useEffect(() => {
+//     if (!wagmiAddress || !contracts.lottery) return;
+
+//     const load = async () => {
+//       const data = await getLotteryInfo();
+//       setLotteryData(data);
+//     };
+
+//     load();
+//   }, [wagmiAddress, contracts]);
+
+//   // --------------------------------------------------------------------
+//   // SERVICE CARD CLICK
+//   // --------------------------------------------------------------------
+//   const handleServiceClick = (data) => {
+//     setServicePopupData(data);
+//     setShowServicePopup(true);
+//   };
+
+//   // --------------------------------------------------------------------
+//   // HARD-CODED SERVICE DATA
+//   // --------------------------------------------------------------------
+//   const serviceData = [
+//     {
+//       imageUrl: "/serviceCards/Personal&Domestic.png",
+//       title: "Personal & Domestic",
+//       subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
+//       driveLink:
+//         "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view",
+//     },
+//     {
+//       imageUrl: "/serviceCards/Professional&Web3Services.png",
+//       title: "Professional & Web3 Services",
+//       subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
+//       driveLink:
+//         "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view",
+//     },
+//     {
+//       imageUrl: "/serviceCards/DR_AIDAN_WELLNECY.png",
+//       title: "DR_AIDAN_WELLNECY",
+//       subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
+//       driveLink:
+//         "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view",
+//     },
+//   ];
+
+//   // --------------------------------------------------------------------
+//   // COMPONENT UI
+//   // --------------------------------------------------------------------
+//   return (
+//     <div className="pageWrapper">
+//       <div className="bgGradientBlob blob1"></div>
+//       <div className="bgGradientBlob blob2"></div>
+
+//       {/* ---------------------------------------------------------------- */}
+//       {/* TOP SECTION */}
+//       {/* ---------------------------------------------------------------- */}
+//       <div className="profileAndCountdown flex w-[86vw] justify-between">
+//         <ProfileCard
+//           userImage={"/dummyProfile.png"}
+//           userName={"Emerson Philips"}
+//           portfolioLink="https://your-portfolio-link.com"
+//         />
+
+//         <div
+//           className="text-sm font-medium text-transparent bg-clip-text"
+//           style={{
+//             backgroundImage: "linear-gradient(90deg, #15BFFD, #9C37FD)",
+//             WebkitBackgroundClip: "text",
+//           }}
+//         >
+//           🎟️ Raffle ends when{" "}
+//           {lotteryData?.maxTickets ?? dummy.maxTickets} tickets are sold.
+//         </div>
+//       </div>
+
+//       {/* ---------------------------------------------------------------- */}
+//       {/* HERO CONTENT */}
+//       {/* ---------------------------------------------------------------- */}
+//       <h1>
+//         <span>The World’s First NFT Backed </span> by 31,320 Hours of Real Human
+//         Time
+//       </h1>
+
+//       <p className="subHeading">
+//         I’m offering 10 years (31,320 hours) of my time as a single NFT,
+//         available through a raffle lottery. Whoever wins the NFT gets exclusive
+//         access to 200+ services — personal, domestic, professional, farming, and
+//         even emergency health-support donations. The NFT is fully transferable
+//         and can be resold anytime.
+//       </p>
+
+//       {/* ---------------------------------------------------------------- */}
+//       {/* HERO BUTTONS */}
+//       {/* ---------------------------------------------------------------- */}
+//       <div className="flex gap-[24px] mt-[27px]">
+//         {/* CONNECT BUTTON */}
+//         <ConnectButton.Custom>
+//           {({ account, openConnectModal, openAccountModal }) => (
+//             <HeroButton
+//               onClick={account ? openAccountModal : openConnectModal}
+//             >
+//               {account ? "Disconnect Wallet" : "Connect Wallet"}
+//             </HeroButton>
+//           )}
+//         </ConnectButton.Custom>
+
+//         {/* BUY TICKET */}
+//         <HeroButton
+//           onClick={() => {
+//             if (!isConnected) return openConnectModal();
+//             setShowBuyPopup(true);
+//           }}
+//         >
+//           Buy Tickets
+//         </HeroButton>
+
+//         {showBuyPopup && (
+//           <BuyTicketpop
+//             onClose={() => {
+//               setShowBuyPopup(false);
+//               navigate("/");
+//             }}
+//           />
+//         )}
+
+//         {/* PARTICIPANTS */}
+//         <HeroButton
+//           variant="link"
+//           onClick={() => setShowParticipants(true)}
+//         >
+//           Participants
+//         </HeroButton>
+
+//         {showParticipants && (
+//           <ParticipantsPopup
+//             onClose={() => setShowParticipants(false)}
+//           />
+//         )}
+//       </div>
+
+//       {/* ---------------------------------------------------------------- */}
+//       {/* USER TICKETS */}
+//       {/* ---------------------------------------------------------------- */}
+//       <HeroButton
+//         variant="link"
+//         onClick={() => {
+//           navigate(`/tickets/${wagmiAddress}`);
+//           setShowTicketsPopup(true);
+//         }}
+//       >
+//         Your Tickets
+//       </HeroButton>
+
+//       {showTicketsPopup && (
+//         <TicketsPopup
+//           onClose={() => {
+//             setShowTicketsPopup(false);
+//             navigate("/");
+//           }}
+//         />
+//       )}
+
+//       <img className="clockImage" src="/clockImage.png" alt="" />
+
+//       {/* ---------------------------------------------------------------- */}
+//       {/* MOBILE TOP */}
+//       {/* ---------------------------------------------------------------- */}
+//       <div className="profileAndCountdownMobile">
+//         <ProfileCard
+//           userImage={"/dummyProfile.png"}
+//           userName={"Emerson Philips"}
+//           portfolioLink="https://your-portfolio-link.com"
+//         />
+
+//         <div
+//           className="
+//             text-sm 
+//             font-medium
+//             text-transparent 
+//             bg-clip-text
+//           "
+//           style={{
+//             backgroundImage: "linear-gradient(90deg, #15BFFD, #9C37FD)",
+//             WebkitBackgroundClip: "text",
+//           }}
+//         >
+//           🎟️ Raffle ends when all tickets are sold.
+//         </div>
+//       </div>
+
+//       {/* ---------------------------------------------------------------- */}
+//       {/* LOTTERY DETAILS */}
+//       {/* ---------------------------------------------------------------- */}
+//       <section className="lotteryDetails">
+//         <h2 className="mb-[12px]">Lottery Details</h2>
+
+//         <ProgressBar
+//           current={lotteryData?.totalSold ?? dummy.totalSold}
+//           total={lotteryData?.maxTickets ?? dummy.maxTickets}
+//         />
+//       </section>
+
+//       {/* ---------------------------------------------------------------- */}
+//       {/* SERVICES */}
+//       {/* ---------------------------------------------------------------- */}
+//       <section className="serviceProviderProfile">
+//         <h2>Service Provider Profile</h2>
+
+//         <div className="serviceGrid mt-[40px]">
+//           {serviceData.map((item, i) => (
+//             <ServiceCard
+//               key={i}
+//               id={i + 1}
+//               title={item.title}
+//               subtitle={item.subTitle}
+//               image={item.imageUrl}
+//               onServiceClick={() => handleServiceClick(item)}
+//             />
+//           ))}
+
+//           {showServicePopup && (
+//             <ServicePopup
+//               data={servicePopupData}
+//               onClose={() => setShowServicePopup(false)}
+//             />
+//           )}
+
+//           <div className="agreementWrapperMain">
+//             <Agreement
+//               documentName={"Master Service Agreement"}
+//               policyList={[
+//                 "Schedule Limits Apply",
+//                 "Non-Transferable",
+//                 "Safety-First Policy",
+//               ]}
+//             />
+
+//             <p className="mt-6 text-center text-white/70 text-sm tracking-wide">
+//               If you have any questions, feel free to contact me on{" "}
+//               <span className="text-blue-400">LinkedIn</span> or{" "}
+//               <span className="text-green-400">WhatsApp</span>.
+//             </p>
+//           </div>
+//         </div>
+//       </section>
+//     </div>
+//   );
+// };
+
+// export default App;
+
+
+//---------------####################################################################
+
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -380,14 +694,18 @@ import {
   TicketsPopup,
   ServicePopup,
 } from "./components/ComponentIndex.js";
-
+import { useDisconnect } from "wagmi";
 const App = () => {
-  // Smart-contract logic
+  // Smart contract logic
   const { getLotteryInfo, contracts } = useWeb3();
 
-  // Wallet state
-  const { address: wagmiAddress, isConnected } = useAccount();
+  // Wagmi wallet state (reactive)
+  const { address, isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
+  const { disconnect } = useDisconnect();
+   
+
+  const navigate = useNavigate();
 
   // UI state
   const [showBuyPopup, setShowBuyPopup] = useState(false);
@@ -395,17 +713,20 @@ const App = () => {
   const [showTicketsPopup, setShowTicketsPopup] = useState(false);
   const [showServicePopup, setShowServicePopup] = useState(false);
   const [servicePopupData, setServicePopupData] = useState(null);
+ 
 
-  const [lotteryData, setLotteryData] = useState({});
-  const navigate = useNavigate();
+
+
+  // Lottery data
+  const [lotteryData, setLotteryData] = useState(null);
 
   const dummy = { maxTickets: 1000, totalSold: 450 };
 
-  // --------------------------------------------------------------------
-  // LOAD LOTTERY DATA ONLY WHEN WALLET + CONTRACT READY
-  // --------------------------------------------------------------------
+  // -----------------------------------------------------
+  // 📌 Load lottery data when wallet OR contracts ready
+  // -----------------------------------------------------
   useEffect(() => {
-    if (!wagmiAddress || !contracts.lottery) return;
+    if (!contracts.lottery) return;
 
     const load = async () => {
       const data = await getLotteryInfo();
@@ -413,19 +734,19 @@ const App = () => {
     };
 
     load();
-  }, [wagmiAddress, contracts]);
+  }, [contracts.lottery, address]); // 🔥 instantly loads when connected
 
-  // --------------------------------------------------------------------
-  // SERVICE CARD CLICK
-  // --------------------------------------------------------------------
+  // -----------------------------------------------------
+  // 📌 Handle service popup
+  // -----------------------------------------------------
   const handleServiceClick = (data) => {
     setServicePopupData(data);
     setShowServicePopup(true);
   };
 
-  // --------------------------------------------------------------------
+  // -----------------------------------------------------
   // HARD-CODED SERVICE DATA
-  // --------------------------------------------------------------------
+  // -----------------------------------------------------
   const serviceData = [
     {
       imageUrl: "/serviceCards/Personal&Domestic.png",
@@ -450,17 +771,15 @@ const App = () => {
     },
   ];
 
-  // --------------------------------------------------------------------
+  // -----------------------------------------------------
   // COMPONENT UI
-  // --------------------------------------------------------------------
+  // -----------------------------------------------------
   return (
     <div className="pageWrapper">
       <div className="bgGradientBlob blob1"></div>
       <div className="bgGradientBlob blob2"></div>
 
-      {/* ---------------------------------------------------------------- */}
       {/* TOP SECTION */}
-      {/* ---------------------------------------------------------------- */}
       <div className="profileAndCountdown flex w-[86vw] justify-between">
         <ProfileCard
           userImage={"/dummyProfile.png"}
@@ -480,9 +799,7 @@ const App = () => {
         </div>
       </div>
 
-      {/* ---------------------------------------------------------------- */}
       {/* HERO CONTENT */}
-      {/* ---------------------------------------------------------------- */}
       <h1>
         <span>The World’s First NFT Backed </span> by 31,320 Hours of Real Human
         Time
@@ -490,26 +807,26 @@ const App = () => {
 
       <p className="subHeading">
         I’m offering 10 years (31,320 hours) of my time as a single NFT,
-        available through a raffle lottery. Whoever wins the NFT gets exclusive
-        access to 200+ services — personal, domestic, professional, farming, and
-        even emergency health-support donations. The NFT is fully transferable
-        and can be resold anytime.
+        available through a raffle lottery.
       </p>
 
-      {/* ---------------------------------------------------------------- */}
       {/* HERO BUTTONS */}
-      {/* ---------------------------------------------------------------- */}
       <div className="flex gap-[24px] mt-[27px]">
-        {/* CONNECT BUTTON */}
+        {/* CONNECT WALLET BUTTON */}
         <ConnectButton.Custom>
-          {({ account, openConnectModal, openAccountModal }) => (
-            <HeroButton
-              onClick={account ? openAccountModal : openConnectModal}
-            >
-              {account ? "Disconnect Wallet" : "Connect Wallet"}
-            </HeroButton>
-          )}
-        </ConnectButton.Custom>
+  {({ account, openConnectModal, openAccountModal }) => (
+    <HeroButton
+      onClick={() => {
+        if (!account) return openConnectModal(); // Connect
+
+        disconnect(); // REAL disconnect
+      }}
+    >
+      {account ? "Disconnect Wallet" : "Connect Wallet"}
+    </HeroButton>
+  )}
+</ConnectButton.Custom>
+
 
         {/* BUY TICKET */}
         <HeroButton
@@ -531,27 +848,21 @@ const App = () => {
         )}
 
         {/* PARTICIPANTS */}
-        <HeroButton
-          variant="link"
-          onClick={() => setShowParticipants(true)}
-        >
+        <HeroButton onClick={() => setShowParticipants(true)}>
           Participants
         </HeroButton>
 
         {showParticipants && (
-          <ParticipantsPopup
-            onClose={() => setShowParticipants(false)}
-          />
+          <ParticipantsPopup onClose={() => setShowParticipants(false)} />
         )}
       </div>
 
-      {/* ---------------------------------------------------------------- */}
       {/* USER TICKETS */}
-      {/* ---------------------------------------------------------------- */}
       <HeroButton
         variant="link"
         onClick={() => {
-          navigate(`/tickets/${wagmiAddress}`);
+          if (!address) return openConnectModal();
+          navigate(`/tickets/${address}`);
           setShowTicketsPopup(true);
         }}
       >
@@ -569,9 +880,7 @@ const App = () => {
 
       <img className="clockImage" src="/clockImage.png" alt="" />
 
-      {/* ---------------------------------------------------------------- */}
       {/* MOBILE TOP */}
-      {/* ---------------------------------------------------------------- */}
       <div className="profileAndCountdownMobile">
         <ProfileCard
           userImage={"/dummyProfile.png"}
@@ -595,9 +904,7 @@ const App = () => {
         </div>
       </div>
 
-      {/* ---------------------------------------------------------------- */}
       {/* LOTTERY DETAILS */}
-      {/* ---------------------------------------------------------------- */}
       <section className="lotteryDetails">
         <h2 className="mb-[12px]">Lottery Details</h2>
 
@@ -607,9 +914,7 @@ const App = () => {
         />
       </section>
 
-      {/* ---------------------------------------------------------------- */}
       {/* SERVICES */}
-      {/* ---------------------------------------------------------------- */}
       <section className="serviceProviderProfile">
         <h2>Service Provider Profile</h2>
 
@@ -643,7 +948,7 @@ const App = () => {
             />
 
             <p className="mt-6 text-center text-white/70 text-sm tracking-wide">
-              If you have any questions, feel free to contact me on{" "}
+              For questions, contact me on{" "}
               <span className="text-blue-400">LinkedIn</span> or{" "}
               <span className="text-green-400">WhatsApp</span>.
             </p>
@@ -655,3 +960,4 @@ const App = () => {
 };
 
 export default App;
+
