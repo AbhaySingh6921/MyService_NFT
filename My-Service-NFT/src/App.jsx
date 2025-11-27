@@ -831,29 +831,29 @@ const App = () => {
     </HeroButton>
   )}
 </ConnectButton.Custom> */}
-          <ConnectButton.Custom>
-  {({ account, chain, mounted, openConnectModal, openAccountModal }) => {
-    const ready = mounted;
-    const connected = ready && account && chain;
-return(
+<ConnectButton.Custom>
+  {({ openConnectModal, openAccountModal }) => {
+    const connected = isConnected && address;
+
+    return (
       <HeroButton
         onClick={() => {
           if (!connected) {
-            openConnectModal(); // Connect
+            openConnectModal?.();      // Open RainbowKit connect modal
           } else {
-            disconnect(); // Disconnect
+            disconnect();              // Hard disconnect
+            // OR use openAccountModal?.(); if you want RainbowKit’s account popup
           }
         }}
       >
-        {!ready
-          ? "Loading..."
-          : connected
-          ? "Disconnect Wallet"
-          : "Connect Wallet"}
+        {connected
+          ? `Disconnect Wallet`
+          : `Connect Wallet`}
       </HeroButton>
     );
   }}
 </ConnectButton.Custom>
+       
 
 
 
