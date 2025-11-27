@@ -3,16 +3,16 @@ import styles from "./ServiceCard.module.css";
 import { IoDocumentTextOutline } from "react-icons/io5";
 
 const ServiceCard = ({ id, title, subtitle, image, onServiceClick }) => {
-  const fetchServiceData = async () => {
-    try {
-      const res = await fetch(`https://myservice-nft-1.onrender.com/service/${id}`);
-      const data = await res.json();
+  // const fetchServiceData = async () => {
+  //   try {
+  //     const res = await fetch(`https://myservice-nft-1.onrender.com/service/${id}`);
+  //     const data = await res.json();
 
-      onServiceClick(data);   // 🔥 send data to App.jsx
-    } catch (err) {
-      console.error("Error:", err);
-    }
-  };
+  //     onServiceClick(data);   // 🔥 send data to App.jsx
+  //   } catch (err) {
+  //     console.error("Error:", err);
+  //   }
+  // };
 
 
 
@@ -29,7 +29,7 @@ const ServiceCard = ({ id, title, subtitle, image, onServiceClick }) => {
           <p className={styles.subtitle}>{subtitle}</p>
         </div>
 
-        <button className={styles.copyBtn} onClick={fetchServiceData}>
+        <button className={styles.copyBtn} onClick={onServiceClick}>
   <IoDocumentTextOutline size={17} />
 </button>
 
