@@ -820,10 +820,9 @@ const App = () => {
         {/* CONNECT WALLET BUTTON */}
         <ConnectButton.Custom>
   {({ account,chain, openConnectModal, openAccountModal }) => (
-        const connected = account && chain;    // change by farman
     <HeroButton
       onClick={() => {
-        if (!connected) return openConnectModal(); // Connect
+        if (!(account && chain)) return openConnectModal(); // Connect
 
         disconnect(); // REAL disconnect
       }}
