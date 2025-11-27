@@ -819,10 +819,11 @@ const App = () => {
       <div className="flex gap-[24px] mt-[27px]">
         {/* CONNECT WALLET BUTTON */}
         <ConnectButton.Custom>
-  {({ account, openConnectModal, openAccountModal }) => (
+  {({ account,chain, openConnectModal, openAccountModal }) => (
+        const connected = account && chain;    // change by farman
     <HeroButton
       onClick={() => {
-        if (!account) return openConnectModal(); // Connect
+        if (!connected) return openConnectModal(); // Connect
 
         disconnect(); // REAL disconnect
       }}
