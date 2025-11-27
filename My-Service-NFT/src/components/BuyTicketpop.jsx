@@ -323,6 +323,12 @@ export default function BuyTicketpop({ onClose }) {
   const allowedToBuy = Math.min(remainingTickets, remainingForUser);
   const [clicked, setClicked] = useState(false);
 
+  useEffect(() => {
+  setClicked(false);
+  setLoading(false);
+}, []);
+
+
 
 
 
@@ -371,8 +377,7 @@ export default function BuyTicketpop({ onClose }) {
   // BUY
   // -----------------------------------------------------------
   const handleBuy = async () => {
-    if (clicked) return;     // 🔐 stop double click
-  setClicked(true);
+    
     try {
       if (!isConnected) {
         notify("⚠ Connect wallet first.");
@@ -408,7 +413,7 @@ export default function BuyTicketpop({ onClose }) {
       }
 
       // notify("⏳ Waiting for confirmation...");
-      onClose();
+      // onClose();
     } catch (err) {
       console.error("Buy Error:", err);
       notify("❌ Transaction failed");

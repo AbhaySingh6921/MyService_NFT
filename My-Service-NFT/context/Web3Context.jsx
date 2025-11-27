@@ -588,12 +588,7 @@ useEffect(() => {
     enableSigner();
   }, [isConnected, walletClient]);
 
-  // -----------------------------------------------------
-// 📌 MOBILE-SAFE PENDING TRANSACTION RECOVERY SYSTEM
-// -----------------------------------------------------
-// -----------------------------------------------------
-// 📌 MOBILE-SAFE PENDING TRANSACTION RECOVERY SYSTEM
-// -----------------------------------------------------
+  
 
 
 let buyLock = false;
@@ -623,7 +618,6 @@ useEffect(() => {
         // PREVENT MULTIPLE CALLS
         if (buyLock) return;
         buyLock = true;
-         notify("🎉 Ticket Purchased Successfully!");
 
         console.log("✅ TX confirmed! Sending to backend...");
 
@@ -635,12 +629,7 @@ useEffect(() => {
           timestamp: Date.now(),
         });
 
-        if (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)) {
-  try { await walletClient?.disconnect?.(); } catch {}
-}
-
-
-       
+        notify("🎉 Ticket Purchased Successfully!");
 
         localStorage.removeItem("pendingBuy");
         clearInterval(interval);
@@ -677,18 +666,7 @@ const buyTicket = async (amount, userData) => {
       return { success: false };
     }
 
-  
-    
-  const tx = await contracts.lottery.buyTickets(amount);
-
-  // Flush mobile pending RPC replay
-  try {
-    walletClient?.transport?.request?.({
-      method: "wallet_requestPermissions",
-      params: [{ eth_accounts: {} }],
-    });
-  } catch (err) {}
-
+    const tx = await contracts.lottery.buyTickets(amount);
 
     // Save BEFORE MetaMask switches app
     localStorage.setItem("pendingBuy", JSON.stringify({
