@@ -467,9 +467,8 @@ export function Web3Provider({ children }) {
   const address = wagmiAddress;
   const [lastShownRound, setLastShownRound] = useState(null);
 
-  useEffect(() => {
-  buyLock.current = false;
-}, []);
+
+
 
 
 
@@ -609,15 +608,12 @@ useEffect(() => {
     const { hash, name, email, amount, wallet } = data;
 
     try {
-      console.log("⏳ Checking pending tx:", hash);
-
       const receipt = await publicClient.waitForTransactionReceipt({
         hash,
         timeout: 1000 * 60 * 5,
       });
 
       if (receipt.status === "success") {
-        if (buyLock.current) return;
         buyLock.current = true;
 
         notify("🎉 Ticket Purchased Successfully!");
@@ -632,34 +628,19 @@ useEffect(() => {
 
         localStorage.removeItem("pendingBuy");
 
-        setTimeout(() => window.location.reload(), 1200);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
       }
-    } catch (err) {
-      console.log("⏳ Waiting...");
-    }
+    } catch {}
   }
 
-  // 🔥 Run instantly when user returns from MetaMask
-  const runImmediately = () => {
-    console.log("▶️ Browser resumed — running recovery now");
-    checkPendingBuy();
-  };
+  // Only interval — no focus + visibility to avoid multi-trigger
+  const interval = setInterval(checkPendingBuy, 3000);
 
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) runImmediately();
-  });
-
-  window.addEventListener("focus", runImmediately);
-
-  // Background polling (slow but backup)
-  const interval = setInterval(checkPendingBuy, 5000);
-
-  return () => {
-    clearInterval(interval);
-    window.removeEventListener("focus", runImmediately);
-    document.removeEventListener("visibilitychange", runImmediately);
-  };
+  return () => clearInterval(interval);
 }, [publicClient]);
+
 
 
 
@@ -670,32 +651,40 @@ useEffect(() => {
   const txLock = useRef(false);
 
   const buyTicket = async (amount, userData) => {
-    try {
-      if (!contracts.lottery) return { success: false };
-
-      const tx = await contracts.lottery.buyTickets(amount);
-      notify("⏳ Transaction sent. Waiting for confirmation…");
-     
-
-      localStorage.setItem(
-        "pendingBuy",
-        JSON.stringify({
-          hash: tx.hash,
-          name: userData.name,
-          email: userData.email,
-          amount,
-          wallet: address?.toLowerCase(),
-          timestamp: Date.now(),
-        })
-      );
-
-      return { success: true };
-    } catch (err) {
-      notify("❌ Transaction failed");
-      txLock.current = false; 
+  try {
+    // Prevent double tx
+    if (txLock.current) {
+      console.log("⛔ Prevented double MetaMask popup");
       return { success: false };
     }
-  };
+    txLock.current = true;
+
+    if (!contracts.lottery) {
+      txLock.current = false;
+      return { success: false };
+    }
+
+    const tx = await contracts.lottery.buyTickets(amount);
+    notify("⏳ Transaction sent. Waiting for confirmation…");
+
+    localStorage.setItem("pendingBuy", JSON.stringify({
+      hash: tx.hash,
+      name: userData.name,
+      email: userData.email,
+      amount,
+      wallet: address?.toLowerCase(),
+      timestamp: Date.now(),
+    }));
+
+    return { success: true };
+
+  } catch (err) {
+    txLock.current = false;
+    notify("❌ Transaction failed");
+    return { success: false };
+  }
+};
+
 
   // -----------------------------
   // Lottery Info
