@@ -590,14 +590,16 @@ useEffect(() => {
 // -----------------------------------------------------
 // 📌 MOBILE-SAFE PENDING TRANSACTION RECOVERY SYSTEM
 // -----------------------------------------------------
+
+
 const buyLock = useRef(false);
 
 useEffect(() => {
-  let interval;
+  if (!publicClient) return;
 
   async function checkPendingBuy() {
     const saved = localStorage.getItem("pendingBuy");
-    if (!saved || buyLock.current || !publicClient) return;
+    if (!saved || buyLock.current) return;
 
     const data = JSON.parse(saved);
     const { hash, name, email, amount, wallet } = data;
@@ -611,13 +613,10 @@ useEffect(() => {
       });
 
       if (receipt.status === "success") {
-
-        // 🔥 SAFEST WAY TO PREVENT DUPLICATES
         if (buyLock.current) return;
         buyLock.current = true;
 
-        console.log("✅ Confirmed! Saving to backend once...");
-         notify("🎉 Ticket Purchased Successfully!");
+        notify("🎉 Ticket Purchased Successfully!");
 
         await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
           name,
@@ -627,29 +626,37 @@ useEffect(() => {
           timestamp: Date.now(),
         });
 
-        
-
         localStorage.removeItem("pendingBuy");
-        clearInterval(interval);
 
-        setTimeout(() => {
-          window.location.reload();
-        }, 1200);
+        setTimeout(() => window.location.reload(), 1200);
       }
     } catch (err) {
-      console.log("⏳ Still waiting…");
+      console.log("⏳ Waiting...");
     }
   }
+
+  // 🔥 Run instantly when user returns from MetaMask
+  const runImmediately = () => {
+    console.log("▶️ Browser resumed — running recovery now");
+    checkPendingBuy();
+  };
+
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) {
-      console.log("🔄 Chrome active — running pending check instantly");
-      checkPendingBuy();
-    }
+    if (!document.hidden) runImmediately();
   });
 
-  interval = setInterval(checkPendingBuy, 3000);
-  return () => clearInterval(interval);
+  window.addEventListener("focus", runImmediately);
+
+  // Background polling (slow but backup)
+  const interval = setInterval(checkPendingBuy, 5000);
+
+  return () => {
+    clearInterval(interval);
+    window.removeEventListener("focus", runImmediately);
+    document.removeEventListener("visibilitychange", runImmediately);
+  };
 }, [publicClient]);
+
 
 
 
