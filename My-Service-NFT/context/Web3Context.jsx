@@ -596,27 +596,36 @@ useEffect(() => {
 // -----------------------------------------------------
 
 
-const buyLock = useRef(false);
+let buyLock = false;
+
 useEffect(() => {
-  if (!publicClient) return;
+  let interval;
 
   async function checkPendingBuy() {
     const saved = localStorage.getItem("pendingBuy");
-    if (!saved || buyLock.current) return;
+    if (!saved || buyLock) return;
 
     const data = JSON.parse(saved);
     const { hash, name, email, amount, wallet } = data;
 
+    if (!hash) return;
+
     try {
+      console.log("⏳ Checking pending buy TX:", hash);
+
       const receipt = await publicClient.waitForTransactionReceipt({
         hash,
         timeout: 1000 * 60 * 5,
       });
 
       if (receipt.status === "success") {
-        buyLock.current = true;
 
-        notify("🎉 Ticket Purchased Successfully!");
+        // PREVENT MULTIPLE CALLS
+        if (buyLock) return;
+        buyLock = true;
+         notify("🎉 Ticket Purchased Successfully!");
+
+        console.log("✅ TX confirmed! Sending to backend...");
 
         await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
           name,
@@ -626,20 +635,25 @@ useEffect(() => {
           timestamp: Date.now(),
         });
 
-        localStorage.removeItem("pendingBuy");
+        if (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)) {
+  try { await walletClient?.disconnect?.(); } catch {}
+}
 
-        setTimeout(() => {
-          window.location.reload();
-        }, 1200);
+
+       
+
+        localStorage.removeItem("pendingBuy");
+        clearInterval(interval);
       }
-    } catch {}
+    } catch (err) {
+      console.log("⏳ Waiting for confirmation…");
+    }
   }
 
-  // Only interval — no focus + visibility to avoid multi-trigger
-  const interval = setInterval(checkPendingBuy, 3000);
-
+  interval = setInterval(checkPendingBuy, 2000);
   return () => clearInterval(interval);
 }, [publicClient]);
+
 
 
 
@@ -648,25 +662,35 @@ useEffect(() => {
   // -----------------------------
   // Buy Ticket
   // -----------------------------
-  const txLock = useRef(false);
+ 
 
-  const buyTicket = async (amount, userData) => {
+const buyTicket = async (amount, userData) => {
   try {
-    // Prevent double tx
-    if (txLock.current) {
-      console.log("⛔ Prevented double MetaMask popup");
-      return { success: false };
-    }
-    txLock.current = true;
-
-    if (!contracts.lottery) {
-      txLock.current = false;
-      return { success: false };
+    let retries = 0;
+    while ((!contracts.lottery || !contracts.lottery.runner) && retries < 10) {
+      await new Promise((r) => setTimeout(r, 300));
+      retries++;
     }
 
-    const tx = await contracts.lottery.buyTickets(amount);
-    notify("⏳ Transaction sent. Waiting for confirmation…");
+    if (!contracts.lottery || !contracts.lottery.runner) {
+      notify("⚠ Wallet not ready. Please reconnect.");
+      return { success: false };
+    }
 
+  
+    
+  const tx = await contracts.lottery.buyTickets(amount);
+
+  // Flush mobile pending RPC replay
+  try {
+    walletClient?.transport?.request?.({
+      method: "wallet_requestPermissions",
+      params: [{ eth_accounts: {} }],
+    });
+  } catch (err) {}
+
+
+    // Save BEFORE MetaMask switches app
     localStorage.setItem("pendingBuy", JSON.stringify({
       hash: tx.hash,
       name: userData.name,
@@ -676,10 +700,18 @@ useEffect(() => {
       timestamp: Date.now(),
     }));
 
+    // notify("⏳ Transaction Sent…");
+
+    // DO NOT await here — mobile killer
+    // publicClient.waitForTransactionReceipt({ hash: tx.hash }).then(() => {
+    //   // notify("🎉 Ticket Purchased Successfully!");
+    //   localStorage.removeItem("pendingBuy");
+    // });
+
     return { success: true };
 
   } catch (err) {
-    txLock.current = false;
+    console.error("Buy Error:", err);
     notify("❌ Transaction failed");
     return { success: false };
   }
