@@ -818,11 +818,11 @@ const App = () => {
       {/* HERO BUTTONS */}
       <div className="flex gap-[24px] mt-[27px]">
         {/* CONNECT WALLET BUTTON */}
-        <ConnectButton.Custom>
-  {({ account,chain, openConnectModal, openAccountModal }) => (
+        {/* <ConnectButton.Custom>
+  {({ account,openConnectModal, openAccountModal }) => (
     <HeroButton
       onClick={() => {
-        if (!(account && chain)) return openConnectModal(); // Connect
+        if (!(account) return openConnectModal(); // Connect
 
         disconnect(); // REAL disconnect
       }}
@@ -830,7 +830,30 @@ const App = () => {
       {account ? "Disconnect Wallet" : "Connect Wallet"}
     </HeroButton>
   )}
+</ConnectButton.Custom> */}
+          <ConnectButton.Custom>
+  {({ account, chain, mounted, openConnectModal, openAccountModal }) => {
+    const ready = mounted;
+    const connected = ready && account && chain;
+
+      <HeroButton
+        onClick={() => {
+          if (!connected) {
+            openConnectModal(); // Connect
+          } else {
+            disconnect(); // Disconnect
+          }
+        }}
+      >
+        {!ready
+          ? "Loading..."
+          : connected
+          ? "Disconnect Wallet"
+          : "Connect Wallet"}
+      </HeroButton>
+  }}
 </ConnectButton.Custom>
+
 
 
         {/* BUY TICKET */}
