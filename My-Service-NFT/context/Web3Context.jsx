@@ -467,6 +467,11 @@ export function Web3Provider({ children }) {
   const address = wagmiAddress;
   const [lastShownRound, setLastShownRound] = useState(null);
 
+  useEffect(() => {
+  buyLock.current = false;
+}, []);
+
+
 
   ///
   //check if the winner is drawn through backend and notigy the user
@@ -593,7 +598,6 @@ useEffect(() => {
 
 
 const buyLock = useRef(false);
-
 useEffect(() => {
   if (!publicClient) return;
 
@@ -663,13 +667,15 @@ useEffect(() => {
   // -----------------------------
   // Buy Ticket
   // -----------------------------
+  const txLock = useRef(false);
+
   const buyTicket = async (amount, userData) => {
     try {
       if (!contracts.lottery) return { success: false };
 
       const tx = await contracts.lottery.buyTickets(amount);
       notify("⏳ Transaction sent. Waiting for confirmation…");
-      onClose(); // Close the buy popup
+     
 
       localStorage.setItem(
         "pendingBuy",
@@ -686,6 +692,7 @@ useEffect(() => {
       return { success: true };
     } catch (err) {
       notify("❌ Transaction failed");
+      txLock.current = false; 
       return { success: false };
     }
   };
