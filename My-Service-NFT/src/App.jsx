@@ -736,6 +736,11 @@ const App = () => {
     load();
   }, [contracts.lottery, address]); // 🔥 instantly loads when connected
 
+  
+
+
+
+
   // -----------------------------------------------------
   // 📌 Handle service popup
   // -----------------------------------------------------
@@ -848,12 +853,17 @@ const App = () => {
         )}
 
         {/* PARTICIPANTS */}
-        <HeroButton onClick={() => setShowParticipants(true)}>
+        <HeroButton
+          variant="link"
+          onClick={() => setShowParticipants(true)}
+        >
           Participants
         </HeroButton>
 
         {showParticipants && (
-          <ParticipantsPopup onClose={() => setShowParticipants(false)} />
+          <ParticipantsPopup
+            onClose={() => setShowParticipants(false)}
+          />
         )}
       </div>
 

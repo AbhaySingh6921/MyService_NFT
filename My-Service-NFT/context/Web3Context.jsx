@@ -620,6 +620,7 @@ useEffect(() => {
         buyLock = true;
 
         console.log("✅ TX confirmed! Sending to backend...");
+        notify("🎉 Ticket Purchased Successfully!");
 
         await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
           name,
@@ -629,7 +630,7 @@ useEffect(() => {
           timestamp: Date.now(),
         });
 
-        notify("🎉 Ticket Purchased Successfully!");
+        
 
         localStorage.removeItem("pendingBuy");
         clearInterval(interval);
@@ -665,7 +666,7 @@ const buyTicket = async (amount, userData) => {
       notify("⚠ Wallet not ready. Please reconnect.");
       return { success: false };
     }
-
+    //  notify("⏳ waiting for confirmation...");
     const tx = await contracts.lottery.buyTickets(amount);
 
     // Save BEFORE MetaMask switches app
@@ -678,7 +679,7 @@ const buyTicket = async (amount, userData) => {
       timestamp: Date.now(),
     }));
 
-    // notify("⏳ Transaction Sent…");
+   
 
     // DO NOT await here — mobile killer
     // publicClient.waitForTransactionReceipt({ hash: tx.hash }).then(() => {

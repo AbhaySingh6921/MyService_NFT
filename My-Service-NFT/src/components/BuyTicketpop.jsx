@@ -412,8 +412,8 @@ export default function BuyTicketpop({ onClose }) {
         return;
       }
 
-      // notify("⏳ Waiting for confirmation...");
-      // onClose();
+       notify("⏳ Waiting for confirmation...");
+      onClose();
     } catch (err) {
       console.error("Buy Error:", err);
       notify("❌ Transaction failed");
