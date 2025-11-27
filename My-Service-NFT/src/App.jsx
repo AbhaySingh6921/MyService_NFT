@@ -835,7 +835,7 @@ const App = () => {
   {({ account, chain, mounted, openConnectModal, openAccountModal }) => {
     const ready = mounted;
     const connected = ready && account && chain;
-
+return(
       <HeroButton
         onClick={() => {
           if (!connected) {
@@ -851,6 +851,7 @@ const App = () => {
           ? "Disconnect Wallet"
           : "Connect Wallet"}
       </HeroButton>
+    );
   }}
 </ConnectButton.Custom>
 
