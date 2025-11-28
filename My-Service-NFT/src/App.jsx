@@ -680,7 +680,7 @@ import { useNavigate } from "react-router-dom";
 
 // RainbowKit + Wagmi
 import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
-import { useAccount } from "wagmi";
+import { useAccount,useConnect } from "wagmi";
 
 
 
@@ -697,7 +697,7 @@ import {
   TicketsPopup,
   ServicePopup,
 } from "./components/ComponentIndex.js";
-import { useDisconnect } from "wagmi";
+
 const App = () => {
   // Smart contract logic
   const { getLotteryInfo, contracts } = useWeb3();
@@ -705,7 +705,7 @@ const App = () => {
   // Wagmi wallet state (reactive)
   const { address, isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
-  const { disconnect } = useDisconnect();
+  
    
 
   const navigate = useNavigate();
@@ -716,6 +716,13 @@ const App = () => {
   const [showTicketsPopup, setShowTicketsPopup] = useState(false);
   const [showServicePopup, setShowServicePopup] = useState(false);
   const [servicePopupData, setServicePopupData] = useState(null);
+  // ⭐ ADD THESE ----------------------------------------
+  const { status } = useConnect();
+
+ 
+
+// 
+
 
 
 
@@ -732,34 +739,44 @@ const App = () => {
   // 📌 Load lottery data when wallet OR contracts ready
   // -----------------------------------------------------
   // Load on read-only or signer contract ready
+// useEffect(() => {
+//   if (!contracts.lottery) return;
+
+//   (async () => {
+//     const data = await getLotteryInfo();
+//     setLotteryData(data);
+//   })();
+// }, [contracts.lottery]);
+
+// // Load instantly when wallet connects
+// useEffect(() => {
+//   if (!isConnected) return;
+
+//   (async () => {
+//     const data = await getLotteryInfo();
+//     setLotteryData(data);
+//   })();
+// }, [isConnected]);
+
+// // Load when address changes
+// useEffect(() => {
+//   if (!address) return;
+
+//   (async () => {
+//     const data = await getLotteryInfo();
+//     setLotteryData(data);
+//   })();
+// }, [address]);
 useEffect(() => {
-  if (!contracts.lottery) return;
+  if (!contracts.write?.lottery) return; // runs ONLY after wallet connects
 
   (async () => {
     const data = await getLotteryInfo();
     setLotteryData(data);
+    console.log("hiiiiii")
   })();
-}, [contracts.lottery]);
+}, [contracts.write?.lottery]);
 
-// Load instantly when wallet connects
-useEffect(() => {
-  if (!isConnected) return;
-
-  (async () => {
-    const data = await getLotteryInfo();
-    setLotteryData(data);
-  })();
-}, [isConnected]);
-
-// Load when address changes
-useEffect(() => {
-  if (!address) return;
-
-  (async () => {
-    const data = await getLotteryInfo();
-    setLotteryData(data);
-  })();
-}, [address]);
 
 
   
