@@ -744,7 +744,7 @@ const buyTicket = async (amount, userData) => {
   };
 
   return (
-    <Web3Context.Provider
+    <Web3Context
       value={{
         address,
         contracts,
@@ -766,6 +766,6 @@ const buyTicket = async (amount, userData) => {
           }
         />
       ))}
-    </Web3Context.Provider>
+    </Web3Context>
   );
 }
