@@ -543,9 +543,9 @@ import { lotteryAddress, lotteryAbi } from "../../lib/ContractConfig";
 
 export default function BuyTicketpop({ onClose }) {
   // 1. Get buyTicket and notify from context (contracts removed)
-  const { buyTicket, notify } = useWeb3();
+  const { buyTicket, notify ,approveUSDC} = useWeb3();
 
-  const { address: wagmiAddress, isConnected } = useAccount();
+  const { address: wagmiAddress, isConnected} = useAccount();
   const { openConnectModal } = useConnectModal();
   const publicClient = usePublicClient();
 
@@ -634,17 +634,23 @@ export default function BuyTicketpop({ onClose }) {
   const handleBuy = async () => {
     try {
       if (!isConnected) return openConnectModal();
-
+    const qty = Number(amount);
       if (!name || !email) {
         notify("⚠ Name & Email required.");
         return;
       }
 
-      const qty = Number(amount);
       if (!qty || qty < 1 || qty > allowedToBuy) {
         notify("⚠ Invalid ticket amount.");
         return;
       }
+      
+      const usdcNeeded = qty * pricePerTicket;
+      const approval = await approveUSDC(usdcNeeded);
+
+    if (!approval.success) return; // 
+
+    notify("⏳ Approval confirmed… Now buying tickets…");
 
       setLoading(true);
       notify("⏳ Sending transaction...");
