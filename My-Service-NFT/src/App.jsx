@@ -681,6 +681,9 @@ import { useNavigate } from "react-router-dom";
 // RainbowKit + Wagmi
 import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
+import { useIsMounted } from "./hooks/useIsMounted";
+
+
 
 // Components
 import {
@@ -713,6 +716,9 @@ const App = () => {
   const [showTicketsPopup, setShowTicketsPopup] = useState(false);
   const [showServicePopup, setShowServicePopup] = useState(false);
   const [servicePopupData, setServicePopupData] = useState(null);
+
+
+
  
 
 
@@ -736,29 +742,7 @@ const App = () => {
     load();
   }, [contracts.lottery, address]); // 🔥 instantly loads when connected
 
-  useEffect(() => {
-  // Do NOT reload if this page load itself is a refresh (prevents loops)
-  const isPageReload = performance?.navigation?.type === 1;
-
-  if (
-    isConnected && 
-    address && 
-    !sessionStorage.getItem("didReloadOnce") &&
-    !isPageReload               // critical condition
-  ) {
-    sessionStorage.setItem("didReloadOnce", "true");
-
-    setTimeout(() => {
-      window.location.reload();
-    }, 200);
-  }
-}, [isConnected, address]);
-
-useEffect(() => {
-  if (!isConnected) {
-    sessionStorage.removeItem("didReloadOnce");
-  }
-}, [isConnected]);
+  
 
   
 
@@ -844,15 +828,20 @@ useEffect(() => {
         {/* CONNECT WALLET BUTTON */}
 
       <ConnectButton.Custom>
-  {({ account, openConnectModal, openAccountModal }) => (
-    <HeroButton
-      onClick={account ? openAccountModal : openConnectModal}
-    >
-      {account ? "Connected" : "Connect Wallet"}
-    </HeroButton>
-  )}
+  {({ account, openConnectModal, openAccountModal }) => {
+    const isMounted = useIsMounted();
+    if (!isMounted) return null;   // 🔥 FIX
+
+    return (
+      <HeroButton
+        onClick={account ? openAccountModal : openConnectModal}
+      >
+        {account ? "Connected" : "Connect Wallet"}
+      </HeroButton>
+    );
+  }}
 </ConnectButton.Custom>
-{/* <ConnectButton/> */}
+
 
        
 
