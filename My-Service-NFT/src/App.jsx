@@ -816,7 +816,7 @@ const App = () => {
       {/* HERO BUTTONS */}
       <div className="flex gap-[24px] mt-[27px]">
         {/* CONNECT WALLET BUTTON */}
-        <ConnectButton.Custom>
+        {/* <ConnectButton.Custom>
           {({ account, openConnectModal, openAccountModal }) => {
             return (
               <HeroButton
@@ -826,7 +826,9 @@ const App = () => {
               </HeroButton>
             );
           }}
-        </ConnectButton.Custom>
+        </ConnectButton.Custom> */}
+
+          <ConnectButton/>
 
         {/* BUY TICKET */}
         <HeroButton
