@@ -681,7 +681,7 @@ import { useNavigate } from "react-router-dom";
 // RainbowKit + Wagmi
 import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
-import { useIsMounted } from "./hooks/useIsMounted";
+
 
 
 
@@ -731,16 +731,36 @@ const App = () => {
   // -----------------------------------------------------
   // 📌 Load lottery data when wallet OR contracts ready
   // -----------------------------------------------------
-  useEffect(() => {
-    if (!contracts.lottery) return;
+  // Load on read-only or signer contract ready
+useEffect(() => {
+  if (!contracts.lottery) return;
 
-    const load = async () => {
-      const data = await getLotteryInfo();
-      setLotteryData(data);
-    };
+  (async () => {
+    const data = await getLotteryInfo();
+    setLotteryData(data);
+  })();
+}, [contracts.lottery]);
 
-    load();
-  }, [contracts.lottery, address]); // 🔥 instantly loads when connected
+// Load instantly when wallet connects
+useEffect(() => {
+  if (!isConnected) return;
+
+  (async () => {
+    const data = await getLotteryInfo();
+    setLotteryData(data);
+  })();
+}, [isConnected]);
+
+// Load when address changes
+useEffect(() => {
+  if (!address) return;
+
+  (async () => {
+    const data = await getLotteryInfo();
+    setLotteryData(data);
+  })();
+}, [address]);
+
 
   
 
@@ -829,8 +849,7 @@ const App = () => {
 
       <ConnectButton.Custom>
   {({ account, openConnectModal, openAccountModal }) => {
-    const isMounted = useIsMounted();
-    if (!isMounted) return null;   // 🔥 FIX
+    
 
     return (
       <HeroButton
@@ -853,6 +872,11 @@ const App = () => {
         <HeroButton
           onClick={() => {
             if (!isConnected) return openConnectModal();
+            // ⏳ Wait for signer to be ready
+    // if (!contracts.lottery || !contracts.lottery.runner) {
+    //   notify("⏳ Connecting wallet… please wait 1 sec");
+    //   return;
+    // }
             setShowBuyPopup(true);
           }}
         >

@@ -437,7 +437,7 @@
 // // ------------------------------
 "use client";
 
-import React, { createContext, useContext, useEffect, useState,useRef } from "react";
+import React, { createContext, useContext, useEffect, useState ,useRef} from "react";
 import { ethers } from "ethers";
 import axios from "axios";
 
@@ -456,25 +456,63 @@ const Web3Context = createContext();
 export const useWeb3 = () => useContext(Web3Context);
 
 export function Web3Provider({ children }) {
-  const { address: wagmiAddress, isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
 
-  const [contracts, setContracts] = useState({ lottery: null, nft: null });
-  const [notifications, setNotifications] = useState([]);
-  const notify = (msg) => setNotifications((prev) => [...prev, msg]);
+  // TWO CONTRACT SETS: READ + WRITE
+  const [contracts, setContracts] = useState({
+    read: { lottery: null, nft: null },
+    write: { lottery: null, nft: null },
+  });
 
-  const address = wagmiAddress;
+  const [notifications, setNotifications] = useState([]);
+  const notify = (msg) => setNotifications((p) => [...p, msg]);
+
   const [lastShownRound, setLastShownRound] = useState(null);
 
+  // ---------------------------------------------------
+  // LOAD READ-ONLY CONTRACT (JsonRpcProvider)
+  // ---------------------------------------------------
+  useEffect(() => {
+    const provider = new ethers.JsonRpcProvider(
+      "https://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO"
+    );
+
+    setContracts((prev) => ({
+      ...prev,
+      read: {
+        lottery: new ethers.Contract(lotteryAddress, lotteryAbi, provider),
+        nft: new ethers.Contract(nftAddress, nftAbi, provider),
+      },
+    }));
+    console.log("📢 Loaded Read-Only Contracts", contracts.read.lottery);
+  }, []);
+
+  // ---------------------------------------------------
+  // LOAD SIGNER CONTRACT (BrowserProvider)
+  // ---------------------------------------------------
+  useEffect(() => {
+    async function loadSigner() {
+      if (!isConnected || !walletClient) return;
+
+      const provider = new ethers.BrowserProvider(walletClient.transport);
+      const signer = await provider.getSigner();
+
+      setContracts((prev) => ({
+        ...prev,
+        write: {
+          lottery: new ethers.Contract(lotteryAddress, lotteryAbi, signer),
+          nft: new ethers.Contract(nftAddress, nftAbi, signer),
+        },
+      }));
+      console.log("📢 Loaded Signer Contracts",contracts.write.lottery);
+    }
+    loadSigner();
+  }, [isConnected, walletClient]);
 
 
-
-
-
-  ///
-  //check if the winner is drawn through backend and notigy the user
-//for offline users
+  //for offline users
 
 useEffect(() => {
   async function checkWinner() {
@@ -514,91 +552,70 @@ useEffect(() => {
   checkWinner();
 }, [address, lastShownRound]);
 //event listerners for lottery contract
-useEffect(() => {
-  if (!contracts?.lottery) return;
 
-  const lottery = contracts.lottery;
 
-  // const winnerHandler = (roundId, winner, tokenId) => {
-  //   notify(`🏆 Winner Selected: ${winner.slice(0, 6)}... Round: ${roundId}`);
-  // };
+// -----------------------------------------------------
+  // 🔥 POLLING INSTEAD OF EVENT LISTENERS (No WebSocket)
+  // -----------------------------------------------------
+ useEffect(() => {
+  // ❗ DO NOT START POLLING UNTIL contracts.read.lottery EXISTS
+  if (!contracts?.read?.lottery) return;
 
-  const newRoundHandler = (newRoundId) => {
-    notify(`🎉 New Round Started! Round ${newRoundId}`);
-  };
+  let lastRound = null;
+  let lastPrice = null;
+  let lastMax = null;
+  let lastLimit = null;
 
-  const priceHandler = (newPrice) => {
-    notify(`💲 Ticket Price Updated: ${Number(ethers.formatUnits(newPrice, 6))} USDC`);
-  };
+  const interval = setInterval(async () => {
+    try {
+      const lottery = contracts.read.lottery;
 
-  const maxHandler = (newMax) => {
-    notify(`📦 Max Tickets Changed: ${newMax}`);
-  };
+      const newRound = await lottery.currentRoundId();
+      const newPrice = await lottery.ticketPrice();
+      const newMax = await lottery.maxTickets();
+      const newLimit = await lottery.maxTicketsPerUser();
 
-  const limitHandler = (newLimit) => {
-    notify(`👤 Max Tickets Per User Updated: ${newLimit}`);
-  };
-  console.log("📢 Subscribing to Lottery Events");
+      if (lastRound !== null && newRound !== lastRound) {
+        notify(`🎉 New Round Started! Round ${newRound}`);
+      }
+      lastRound = newRound;
 
-  // lottery.on("WinnerDrawn", winnerHandler);
-  lottery.on("NewRoundStarted", newRoundHandler);
-  lottery.on("TicketPriceChanged", priceHandler);
-  lottery.on("MaxTicketsChanged", maxHandler);
-  lottery.on("MaxTicketsPerUserChanged", limitHandler);
+      if (lastPrice !== null && newPrice.toString() !== lastPrice.toString()) {
+        notify(`💲 Ticket Price Updated: ${ethers.formatUnits(newPrice, 6)} USDC`);
+      }
+      lastPrice = newPrice;
 
-  return () => {
-    // lottery.off("WinnerDrawn", winnerHandler);
-    lottery.off("NewRoundStarted", newRoundHandler);
-    lottery.off("TicketPriceChanged", priceHandler);
-    lottery.off("MaxTicketsChanged", maxHandler);
-    lottery.off("MaxTicketsPerUserChanged", limitHandler);
-  };
-}, [contracts]);
+      if (lastMax !== null && newMax.toString() !== lastMax.toString()) {
+        notify(`📦 Max Tickets Updated: ${newMax}`);
+      }
+      lastMax = newMax;
 
-  // -----------------------------
-  // Load read-only provider ONCE
-  // -----------------------------
-  useEffect(() => {
-    const provider = new ethers.JsonRpcProvider(
-      "https://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO"
-    );
+      if (lastLimit !== null && newLimit.toString() !== lastLimit.toString()) {
+        notify(`👤 Max Tickets Per User Updated: ${newLimit}`);
+      }
+      lastLimit = newLimit;
 
-    setContracts({
-      lottery: new ethers.Contract(lotteryAddress, lotteryAbi, provider),
-      nft: new ethers.Contract(nftAddress, nftAbi, provider),
-    });
-  }, []);
-
-  // -----------------------------
-  // Upgrade to signer when connected
-  // -----------------------------
-  useEffect(() => {
-    async function enableSigner() {
-      if (!isConnected || !walletClient) return;
-
-      const provider = new ethers.BrowserProvider(walletClient.transport);
-      const signer = await provider.getSigner();
-
-      setContracts({
-        lottery: new ethers.Contract(lotteryAddress, lotteryAbi, signer),
-        nft: new ethers.Contract(nftAddress, nftAbi, signer),
-      });
+    } catch (err) {
+      console.log("Polling error:", err);
     }
+  }, 3000);
 
-    enableSigner();
-  }, [isConnected, walletClient]);
+  return () => clearInterval(interval);
 
-  
+}, [contracts?.read?.lottery]); // ⬅️ Run polling only when contract available
 
 
-let buyLock = false;
+
+
+
+const buyLock = useRef(false);
 
 useEffect(() => {
-  let interval;
+  if (!publicClient) return;
 
-  async function checkPendingBuy() {
+  window.pendingBuyInterval = setInterval(async () => {
     const saved = localStorage.getItem("pendingBuy");
-    if (!saved || buyLock) return;
+    if (!saved || buyLock.current) return;
 
     const data = JSON.parse(saved);
     const { hash, name, email, amount, wallet } = data;
@@ -606,6 +623,7 @@ useEffect(() => {
     if (!hash) return;
 
     try {
+      // 
       console.log("⏳ Checking pending buy TX:", hash);
 
       const receipt = await publicClient.waitForTransactionReceipt({
@@ -614,13 +632,11 @@ useEffect(() => {
       });
 
       if (receipt.status === "success") {
-
-        // PREVENT MULTIPLE CALLS
-        if (buyLock) return;
-        buyLock = true;
+        if (buyLock.current) return;
+        buyLock.current = true;
 
         console.log("✅ TX confirmed! Sending to backend...");
-        notify("🎉 Ticket Purchased Successfully!");
+       
 
         await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
           name,
@@ -630,46 +646,49 @@ useEffect(() => {
           timestamp: Date.now(),
         });
 
-        
+        notify("🎉 Ticket Purchased Successfully!");
 
         localStorage.removeItem("pendingBuy");
-        clearInterval(interval);
+
+        // reset lock
+        setTimeout(() => {
+          buyLock.current = false;
+        }, 500);
       }
     } catch (err) {
       console.log("⏳ Waiting for confirmation…");
     }
-  }
+  }, 2000);
 
-  interval = setInterval(checkPendingBuy, 2000);
-  return () => clearInterval(interval);
+  return () => clearInterval(window.pendingBuyInterval);
 }, [publicClient]);
 
 
 
-
-
-
-  // -----------------------------
-  // Buy Ticket
-  // -----------------------------
- 
-
+/////////////////////////////
+/////////buy ticket//////////
+//////////////////////////
 const buyTicket = async (amount, userData) => {
   try {
     let retries = 0;
-    while ((!contracts.lottery || !contracts.lottery.runner) && retries < 10) {
+
+    // 🔥 Wait for write contract (signer) to be ready
+    while ((!contracts.write.lottery) && retries < 10) {
       await new Promise((r) => setTimeout(r, 300));
       retries++;
     }
 
-    if (!contracts.lottery || !contracts.lottery.runner) {
+    console.log("🚀 Using write contract:", contracts.write.lottery);
+
+    if (!contracts.write.lottery) {
       notify("⚠ Wallet not ready. Please reconnect.");
       return { success: false };
     }
-    //  notify("⏳ waiting for confirmation...");
-    const tx = await contracts.lottery.buyTickets(amount);
 
-    // Save BEFORE MetaMask switches app
+    // 🔥 WRITE contract → buy tickets
+    const tx = await contracts.write.lottery.buyTickets(amount);
+
+    // Save BEFORE MetaMask redirects
     localStorage.setItem("pendingBuy", JSON.stringify({
       hash: tx.hash,
       name: userData.name,
@@ -678,14 +697,6 @@ const buyTicket = async (amount, userData) => {
       wallet: address?.toLowerCase(),
       timestamp: Date.now(),
     }));
-
-   
-
-    // DO NOT await here — mobile killer
-    // publicClient.waitForTransactionReceipt({ hash: tx.hash }).then(() => {
-    //   // notify("🎉 Ticket Purchased Successfully!");
-    //   localStorage.removeItem("pendingBuy");
-    // });
 
     return { success: true };
 
@@ -697,18 +708,20 @@ const buyTicket = async (amount, userData) => {
 };
 
 
-  // -----------------------------
-  // Lottery Info
-  // -----------------------------
+
+
+  // ---------------------------------------------------
+  // READ LOTTERY INFO (always from READ CONTRACT)
+  // ---------------------------------------------------
   const getLotteryInfo = async () => {
-    if (!contracts.lottery) return null;
+    if (!contracts.read.lottery) return null;
 
     try {
       const [status, sold, price, max] = await Promise.all([
-        contracts.lottery.getLotteryStatus(),
-        contracts.lottery.getTotalTicketsSold(),
-        contracts.lottery.ticketPrice(),
-        contracts.lottery.maxTickets(),
+        contracts.read.lottery.getLotteryStatus(),
+        contracts.read.lottery.getTotalTicketsSold(),
+        contracts.read.lottery.ticketPrice(),
+        contracts.read.lottery.maxTickets(),
       ]);
 
       return {
@@ -717,14 +730,14 @@ const buyTicket = async (amount, userData) => {
         ticketPrice: ethers.formatUnits(price, 6),
         maxTickets: Number(max),
       };
-    } catch {
+    } catch (e) {
       return null;
     }
   };
+
   const getMsaAgreement = async () => {
     try {
-      if (!contracts.lottery) return null;
-      return await contracts.lottery.getMsaURI();
+      return await contracts.read.lottery.getMsaURI();
     } catch {
       return null;
     }
@@ -737,9 +750,9 @@ const buyTicket = async (amount, userData) => {
         contracts,
         buyTicket,
         getLotteryInfo,
+        getMsaAgreement,
         notifications,
         notify,
-        getMsaAgreement ,
       }}
     >
       {children}

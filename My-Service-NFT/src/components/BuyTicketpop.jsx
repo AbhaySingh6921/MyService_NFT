@@ -291,53 +291,41 @@
 import { useState, useEffect } from "react";
 import { useWeb3 } from "../../context/Web3Context";
 import { ethers } from "ethers";
-import axios from "axios";
 
 // RainbowKit + Wagmi
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 
 export default function BuyTicketpop({ onClose }) {
-  const { buyTicket, contracts, notify } = useWeb3();
+  const { contracts, buyTicket, notify } = useWeb3();
 
-  // Wagmi Wallet (always accurate)
   const { address: wagmiAddress, isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
 
-  // States
+  // Form + UI state
   const [amount, setAmount] = useState("");
   const [pricePerTicket, setPricePerTicket] = useState(0);
   const [maxTicketPerUser, setMaxTicketPerUser] = useState(0);
   const [maxTickets, setMaxTickets] = useState(0);
   const [totalSold, setTotalSold] = useState(0);
   const [userTicketsBought, setUserTicketsBought] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
 
-  // Form inputs
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const remainingTickets = maxTickets - totalSold;
   const remainingForUser = Math.max(maxTicketPerUser - userTicketsBought, 0);
   const allowedToBuy = Math.min(remainingTickets, remainingForUser);
-  const [clicked, setClicked] = useState(false);
 
-  useEffect(() => {
-  setClicked(false);
-  setLoading(false);
-}, []);
-
-
-
-
+  const total = pricePerTicket * (Number(amount) || 0);
 
   // -----------------------------------------------------------
-  // LOAD LOTTERY DATA
+  // LOAD LOTTERY DATA (READ CONTRACT ONLY)
   // -----------------------------------------------------------
   useEffect(() => {
-    const fetchPrice = async () => {
-      if (!contracts?.lottery) return;
+    const load = async () => {
+      if (!contracts.read.lottery) return;
 
       try {
         const [
@@ -345,14 +333,14 @@ export default function BuyTicketpop({ onClose }) {
           maxUser,
           maxT,
           sold,
-          boughtByUser,
+          bought,
         ] = await Promise.all([
-          contracts.lottery.ticketPrice(),
-          contracts.lottery.maxTicketsPerUser(),
-          contracts.lottery.maxTickets(),
-          contracts.lottery.getTotalTicketsSold(),
+          contracts.read.lottery.ticketPrice(),
+          contracts.read.lottery.maxTicketsPerUser(),
+          contracts.read.lottery.maxTickets(),
+          contracts.read.lottery.getTotalTicketsSold(),
           wagmiAddress
-            ? contracts.lottery.getTicketsByHolder(wagmiAddress)
+            ? contracts.read.lottery.getTicketsByHolder(wagmiAddress)
             : 0,
         ]);
 
@@ -360,30 +348,21 @@ export default function BuyTicketpop({ onClose }) {
         setMaxTicketPerUser(Number(maxUser));
         setMaxTickets(Number(maxT));
         setTotalSold(Number(sold));
-        setUserTicketsBought(Number(boughtByUser));
-      } catch (err) {
-        console.error("Price fetch error:", err);
+        setUserTicketsBought(Number(bought));
+      } catch (e) {
+        console.error("Price fetch error:", e);
       }
     };
 
-    fetchPrice();
-  }, [contracts, wagmiAddress]);
-
-  useEffect(() => {
-    setTotal(pricePerTicket * (Number(amount) || 0));
-  }, [amount, pricePerTicket]);
+    load();
+  }, [contracts.read, wagmiAddress]);
 
   // -----------------------------------------------------------
   // BUY
   // -----------------------------------------------------------
   const handleBuy = async () => {
-    
     try {
-      if (!isConnected) {
-        notify("⚠ Connect wallet first.");
-        openConnectModal?.();
-        return;
-      }
+      if (!isConnected) return openConnectModal();
 
       if (!name || !email) {
         notify("⚠ Name & Email required.");
@@ -391,31 +370,21 @@ export default function BuyTicketpop({ onClose }) {
       }
 
       const qty = Number(amount);
-
-      if (!qty || qty < 1) {
-        notify("⚠ Enter valid ticket amount.");
-        return;
-      }
-
-      if (qty > allowedToBuy) {
-        notify(`⚠ You can buy only ${allowedToBuy} tickets!`);
+      if (!qty || qty < 1 || qty > allowedToBuy) {
+        notify("⚠ Invalid ticket amount.");
         return;
       }
 
       setLoading(true);
       notify("⏳ Sending transaction...");
+      
 
       const res = await buyTicket(qty, { name, email });
+       notify("waiting for confirmation.......");
 
-      if (!res.success) {
-        setLoading(false);
-        return;
-      }
-
-      //  notify("⏳ Waiting for confirmation...");
-      onClose();
+      if (res.success) onClose();
     } catch (err) {
-      console.error("Buy Error:", err);
+      console.error(err);
       notify("❌ Transaction failed");
     } finally {
       setLoading(false);
@@ -435,7 +404,6 @@ export default function BuyTicketpop({ onClose }) {
           border: "1px solid rgba(255,255,255,0.15)",
         }}
       >
-        {/* Close */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-white/70 hover:text-white text-lg"
@@ -443,7 +411,6 @@ export default function BuyTicketpop({ onClose }) {
           ✕
         </button>
 
-        {/* Title */}
         <h2
           className="text-xl font-semibold mb-3 text-center"
           style={{
@@ -455,49 +422,45 @@ export default function BuyTicketpop({ onClose }) {
           Buy Tickets
         </h2>
 
-        {/* Wallet warning */}
         {!isConnected && (
           <div className="mb-4 text-center text-sm text-red-400">
             ⚠ Wallet not connected
-            <br />
             <button
               onClick={openConnectModal}
-              className="mt-2 px-4 py-2 rounded-md bg-[#15BFFD]/20 border border-[#15BFFD]/40 hover:bg-[#15BFFD]/30"
+              className="mt-2 px-4 py-2 rounded-md bg-[#15BFFD]/20 border"
             >
               Connect Wallet
             </button>
           </div>
         )}
 
-        {/* FORM */}
+        {/* Form */}
         <div className="grid grid-cols-2 gap-3 mt-4">
           {/* Name */}
-          <div className="flex flex-col gap-1">
+          <div>
             <label className="text-xs text-white/60">Name</label>
             <input
               type="text"
+              className="px-3 py-2 bg-black/40 rounded-md border border-white/10 text-sm w-full"
               value={name}
-              placeholder="Full name"
               onChange={(e) => setName(e.target.value)}
-              className="px-3 py-2 rounded-md bg-black/40 border border-white/10 text-sm"
             />
           </div>
 
           {/* Email */}
-          <div className="flex flex-col gap-1">
+          <div>
             <label className="text-xs text-white/60">Email</label>
             <input
               type="email"
+              className="px-3 py-2 bg-black/40 rounded-md border border-white/10 text-sm w-full"
               value={email}
-              placeholder="Email"
               onChange={(e) => setEmail(e.target.value)}
-              className="px-3 py-2 rounded-md bg-black/40 border border-white/10 text-sm"
             />
           </div>
 
           {/* Wallet */}
-          <div className="col-span-2 text-xs text-white/60 flex justify-between bg-black/30 border border-white/10 p-2 rounded-md mt-1">
-            <span>Wallet:</span>
+          <div className="col-span-2 text-xs bg-black/30 p-2 border border-white/10 rounded-md flex justify-between">
+            <span>Wallet</span>
             <span className="text-[#15BFFD]">
               {wagmiAddress
                 ? `${wagmiAddress.slice(0, 6)}...${wagmiAddress.slice(-4)}`
@@ -506,76 +469,57 @@ export default function BuyTicketpop({ onClose }) {
           </div>
 
           {/* Tickets */}
-          <div className="flex flex-col gap-1">
+          <div>
             <label className="text-xs text-white/60">Tickets</label>
             <input
               type="number"
               value={amount}
               min="1"
               max={allowedToBuy}
-              onChange={(e) => {
-                const raw = e.target.value;
-                if (raw === "") return setAmount("");
-
-                const val = Number(raw);
-
-                if (val < 1) return notify("⚠ Minimum 1 ticket required.");
-                if (val > allowedToBuy)
-                  return notify(`⚠ You can buy maximum ${allowedToBuy}.`);
-
-                setAmount(val);
-              }}
-              className="px-3 py-2 rounded-md bg-black/40 border border-white/10 text-sm"
+              onChange={(e) => setAmount(e.target.value)}
+              className="px-3 py-2 bg-black/40 rounded-md border border-white/10 text-sm w-full"
             />
           </div>
 
           {/* Total */}
-          <div className="flex flex-col gap-1">
+          <div>
             <label className="text-xs text-white/60">Total</label>
-            <div className="px-3 py-2 rounded-md bg-black/40 border border-white/10 text-sm">
+            <div className="px-3 py-2 bg-black/40 rounded-md border border-white/10 text-sm">
               {total.toFixed(2)} USDC
             </div>
           </div>
         </div>
 
-        {/* Info Row */}
-        <div className="flex justify-between items-center mt-4 px-1 text-[11px]">
-          <div className="flex flex-col items-center">
-            <span className="text-white/50">Max/User</span>
-            <span className="text-[#15BFFD]">{maxTicketPerUser}</span>
+        {/* Info */}
+        <div className="flex justify-between mt-4 text-[11px]">
+          <div>
+            <div className="text-white/50">Max/User</div>
+            <div className="text-[#15BFFD]">{maxTicketPerUser}</div>
           </div>
-          <div className="flex flex-col items-center">
-            <span className="text-white/50">You Bought</span>
-            <span className="text-[#15BFFD]">{userTicketsBought}</span>
+          <div>
+            <div className="text-white/50">You Bought</div>
+            <div className="text-[#15BFFD]">{userTicketsBought}</div>
           </div>
-          <div className="flex flex-col items-center">
-            <span className="text-white/50">You Can Buy</span>
-            <span className="text-[#9C37FD] font-semibold">{allowedToBuy}</span>
+          <div>
+            <div className="text-white/50">You Can Buy</div>
+            <div className="text-[#9C37FD]">{allowedToBuy}</div>
           </div>
-          <div className="flex flex-col items-center">
-            <span className="text-white/50">Remaining</span>
-            <span className="text-[#9C37FD] font-semibold">
-              {remainingTickets}
-            </span>
+          <div>
+            <div className="text-white/50">Remaining</div>
+            <div className="text-[#9C37FD]">{remainingTickets}</div>
           </div>
         </div>
 
-        {/* BUY BUTTON */}
         <button
           onClick={handleBuy}
-          disabled={loading || !contracts?.lottery}
-          className={`w-full mt-4 py-2.5 rounded-full text-sm border border-white/10
-            ${
-              loading || !contracts?.lottery
-                ? "bg-gray-700 cursor-not-allowed"
-                : "bg-[#090D2D] hover:scale-105 active:scale-95"
-            }`}
+          disabled={loading}
+          className={`w-full mt-4 py-2 rounded-full text-sm border ${
+            loading
+              ? "bg-gray-700 cursor-not-allowed"
+              : "bg-[#090D2D] hover:scale-105"
+          }`}
         >
-          {loading
-            ? "Processing..."
-            : !isConnected
-            ? "Connect Wallet"
-            : "Buy Now"}
+          {loading ? "Processing..." : "Buy Now"}
         </button>
       </div>
     </div>
