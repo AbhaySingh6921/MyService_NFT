@@ -819,7 +819,7 @@ const App = () => {
       <div className="flex gap-[24px] mt-[27px]">
         {/* CONNECT WALLET BUTTON */}
 
-      <ConnectButton.Custom>
+      {/* <ConnectButton.Custom>
   {({ account, openConnectModal, openAccountModal }) => (
     <HeroButton
       onClick={account ? openAccountModal : openConnectModal}
@@ -827,7 +827,8 @@ const App = () => {
       {account ? "Connected" : "Connect Wallet"}
     </HeroButton>
   )}
-</ConnectButton.Custom>
+</ConnectButton.Custom> */}
+<ConnectButton/>
 
        
 
