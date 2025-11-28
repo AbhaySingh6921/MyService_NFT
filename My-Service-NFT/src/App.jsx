@@ -736,6 +736,30 @@ const App = () => {
     load();
   }, [contracts.lottery, address]); // 🔥 instantly loads when connected
 
+  useEffect(() => {
+  // Do NOT reload if this page load itself is a refresh (prevents loops)
+  const isPageReload = performance?.navigation?.type === 1;
+
+  if (
+    isConnected && 
+    address && 
+    !sessionStorage.getItem("didReloadOnce") &&
+    !isPageReload               // critical condition
+  ) {
+    sessionStorage.setItem("didReloadOnce", "true");
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 200);
+  }
+}, [isConnected, address]);
+
+useEffect(() => {
+  if (!isConnected) {
+    sessionStorage.removeItem("didReloadOnce");
+  }
+}, [isConnected]);
+
   
 
 
@@ -819,7 +843,7 @@ const App = () => {
       <div className="flex gap-[24px] mt-[27px]">
         {/* CONNECT WALLET BUTTON */}
 
-      {/* <ConnectButton.Custom>
+      <ConnectButton.Custom>
   {({ account, openConnectModal, openAccountModal }) => (
     <HeroButton
       onClick={account ? openAccountModal : openConnectModal}
@@ -827,8 +851,8 @@ const App = () => {
       {account ? "Connected" : "Connect Wallet"}
     </HeroButton>
   )}
-</ConnectButton.Custom> */}
-<ConnectButton/>
+</ConnectButton.Custom>
+{/* <ConnectButton/> */}
 
        
 
