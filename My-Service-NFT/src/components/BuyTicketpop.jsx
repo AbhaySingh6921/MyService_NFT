@@ -412,7 +412,7 @@ export default function BuyTicketpop({ onClose }) {
         return;
       }
 
-       notify("⏳ Waiting for confirmation...");
+      //  notify("⏳ Waiting for confirmation...");
       onClose();
     } catch (err) {
       console.error("Buy Error:", err);
