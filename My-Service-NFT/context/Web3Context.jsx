@@ -220,16 +220,17 @@ export function Web3Provider({ children }) {
 
     const weiAmount = parseUnits(amount.toString(), 6); 
 
-    const hash = await writeContractAsync({
+    const approveTxnHash = await writeContractAsync({
       address: usdcAddress, 
       abi: erc20Abi,
       functionName: "approve",
       args: [lotteryAddress, weiAmount],
     });
+     await publicClient.waitForTransactionReceipt({ hash: approveTxnHash });
 
     notify("⏳ Approval sent…");
 
-    return { success: true, hash };
+    return { success: true, approveTxnHash };
   } catch (e) {
     console.error("Approval Error:", e);
     notify("❌ Approval failed");
@@ -251,14 +252,14 @@ export function Web3Provider({ children }) {
       const results = await publicClient.multicall({
         contracts: [
           // Added missing fields from your Solidity contract
-          { address: lotteryAddress, abi: lotteryAbi, functionName: 'getLotteryStatus' },
-          { address: lotteryAddress, abi: lotteryAbi, functionName: 'currentRoundId' },
+          
+          // { address: lotteryAddress, abi: lotteryAbi, functionName: 'currentRoundId' },
           { address: lotteryAddress, abi: lotteryAbi, functionName: 'getTotalTicketsSold' },
-          { address: lotteryAddress, abi: lotteryAbi, functionName: 'ticketPrice' },
+          // { address: lotteryAddress, abi: lotteryAbi, functionName: 'ticketPrice' },
           { address: lotteryAddress, abi: lotteryAbi, functionName: 'maxTickets' },
           // Includes the safeAddress fix for getTicketsByHolder
-          { address: lotteryAddress, abi: lotteryAbi, functionName: 'getTicketsByHolder', args: [safeAddress] },
-          { address: lotteryAddress, abi: lotteryAbi, functionName: 'maxTicketsPerUser'},
+          // { address: lotteryAddress, abi: lotteryAbi, functionName: 'getTicketsByHolder', args: [safeAddress] },
+          // { address: lotteryAddress, abi: lotteryAbi, functionName: 'maxTicketsPerUser'},
         ],
         allowFailure: false
       });
@@ -266,10 +267,12 @@ export function Web3Provider({ children }) {
       // 3. Safety Check
       if (!results) return null;
 
-      const [status, currentRound, sold, price, max, userTicketsBought, maxTicketPerUser] = results;
+      // const [ currentRound, sold, price, max, userTicketsBought, maxTicketPerUser] = results;
+       const [  sold, max] = results;
+      
 
       return {
-        status: Number(status), // 0: OPEN, 1: CALCULATING, 2: CLOSED
+       
         currentRound: Number(currentRound),
         totalSold: Number(sold),
         ticketPrice: formatUnits(price, 6),
