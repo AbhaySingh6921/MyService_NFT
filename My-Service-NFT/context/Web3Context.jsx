@@ -242,49 +242,44 @@ export function Web3Provider({ children }) {
   // ---------------------------------------------------
   // 📖 READ LOTTERY INFO
   // ---------------------------------------------------
-  const getLotteryInfo = async () => {
-    if (!publicClient) return null;
+const getLotteryInfo = async () => {
+  if (!publicClient) return null;
 
-    try {
-      // 1. Use actual address or Zero Address (if not connected) to prevent crashes
-      const safeAddress = address || "0x0000000000000000000000000000000000000000";
+  try {
+    // Build the multicall (only two functions)
+    const baseCalls = [
+      { address: lotteryAddress, abi: lotteryAbi, functionName: "maxTickets" },
+      { address: lotteryAddress, abi: lotteryAbi, functionName: "getTotalTicketsSold" },
+    ];
 
-      const results = await publicClient.multicall({
-        contracts: [
-          // Added missing fields from your Solidity contract
-          
-          // { address: lotteryAddress, abi: lotteryAbi, functionName: 'currentRoundId' },
-          { address: lotteryAddress, abi: lotteryAbi, functionName: 'getTotalTicketsSold' },
-          // { address: lotteryAddress, abi: lotteryAbi, functionName: 'ticketPrice' },
-          { address: lotteryAddress, abi: lotteryAbi, functionName: 'maxTickets' },
-          // Includes the safeAddress fix for getTicketsByHolder
-          // { address: lotteryAddress, abi: lotteryAbi, functionName: 'getTicketsByHolder', args: [safeAddress] },
-          // { address: lotteryAddress, abi: lotteryAbi, functionName: 'maxTicketsPerUser'},
-        ],
-        allowFailure: false
-      });
+    // Execute calls
+    const results = await publicClient.multicall({
+      contracts: baseCalls,
+      allowFailure: false,
+    });
 
-      // 3. Safety Check
-      if (!results) return null;
-
-      // const [ currentRound, sold, price, max, userTicketsBought, maxTicketPerUser] = results;
-       const [  sold, max] = results;
-      
-
-      return {
-       
-        currentRound: Number(currentRound),
-        totalSold: Number(sold),
-        ticketPrice: formatUnits(price, 6),
-        maxTickets: Number(max),
-        userTicketsBought: Number(userTicketsBought),
-        maxTicketPerUser: Number(maxTicketPerUser),
-      };
-    } catch (e) {
-      console.error("Read Error:", e);
+    // Safety check
+    if (!results || results.length < 2) {
+      console.warn("❗ Multicall returned no data");
       return null;
     }
-  };
+
+    // Extract values
+    const maxT = results[0];
+    const sold = results[1];
+
+    return {
+      maxTickets: Number(maxT),
+      totalSold: Number(sold),
+    };
+
+  } catch (err) {
+    console.error("Read Error:", err);
+    return null;
+  }
+};
+
+
   const getMsaAgreement = async () => {
     try {
       if (!publicClient) return null;

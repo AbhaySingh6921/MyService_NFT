@@ -1,6 +1,6 @@
 // /lib/ContractConfig.js
 
-export const lotteryAddress = "0x06084fdb3c2a80f547fbba990599483b644b5f9d";
+export const lotteryAddress = "0x06084FDB3c2A80f547FBba990599483B644b5f9D";
 export const nftAddress = "0xd5aa05b1033ea39175733848235da02a14f032ab";
 export const usdcAddress="0x4f9fa9c1c9d66e5baf565c239e3b96b4d8e3f43a";
 // Paste your actual ABI JSONs (shortened for example)
