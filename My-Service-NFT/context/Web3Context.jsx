@@ -492,42 +492,24 @@ export function Web3Provider({ children }) {
   // ---------------------------------------------------
   // LOAD SIGNER CONTRACT (BrowserProvider)
   // ---------------------------------------------------
-  // ==========================================================
-// FIX FOR MOBILE META MASK — wait until signer is truly ready
-// ==========================================================
-useEffect(() => {
-  let timeout;
+  useEffect(() => {
+    async function loadSigner() {
+      if (!isConnected || !walletClient) return;
 
-  async function loadSigner() {
-    if (!isConnected || !walletClient) return;
+      const provider = new ethers.BrowserProvider(walletClient.transport);
+      const signer = await provider.getSigner();
 
-    // ⏳ Small delay so mobile browser finishes reloading the page
-    timeout = setTimeout(async () => {
-      try {
-        const provider = new ethers.BrowserProvider(walletClient.transport);
-        const signer = await provider.getSigner();
-
-        setContracts((prev) => ({
-          ...prev,
-          write: {
-            lottery: new ethers.Contract(lotteryAddress, lotteryAbi, signer),
-            nft: new ethers.Contract(nftAddress, nftAbi, signer),
-          },
-        }));
-
-        console.log("📢 MOBILE SAFE SIGNER READY");
-
-      } catch (err) {
-        console.log("Signer not ready yet...", err);
-      }
-    }, 300); // 300ms = PERFECT for mobile MM redirect
-  }
-
-  loadSigner();
-  return () => clearTimeout(timeout);
-
-}, [isConnected, walletClient]);
-
+      setContracts((prev) => ({
+        ...prev,
+        write: {
+          lottery: new ethers.Contract(lotteryAddress, lotteryAbi, signer),
+          nft: new ethers.Contract(nftAddress, nftAbi, signer),
+        },
+      }));
+      console.log("📢 Loaded Signer Contracts",contracts.write.lottery);
+    }
+    loadSigner();
+  }, [isConnected, walletClient]);
 
 
   //for offline users

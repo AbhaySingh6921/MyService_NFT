@@ -739,43 +739,43 @@ const App = () => {
   // 📌 Load lottery data when wallet OR contracts ready
   // -----------------------------------------------------
   // Load on read-only or signer contract ready
-// useEffect(() => {
-//   if (!contracts.lottery) return;
+useEffect(() => {
+  if (!contracts.lottery) return;
 
-//   (async () => {
-//     const data = await getLotteryInfo();
-//     setLotteryData(data);
-//   })();
-// }, [contracts.lottery]);
+  (async () => {
+    const data = await getLotteryInfo();
+    setLotteryData(data);
+  })();
+}, [contracts.lottery]);
 
-// // Load instantly when wallet connects
-// useEffect(() => {
-//   if (!isConnected) return;
+// Load instantly when wallet connects
+useEffect(() => {
+  if (!isConnected) return;
 
-//   (async () => {
-//     const data = await getLotteryInfo();
-//     setLotteryData(data);
-//   })();
-// }, [isConnected]);
+  (async () => {
+    const data = await getLotteryInfo();
+    setLotteryData(data);
+  })();
+}, [isConnected]);
 
-// // Load when address changes
-// useEffect(() => {
-//   if (!address) return;
+// Load when address changes
+useEffect(() => {
+  if (!address) return;
 
-//   (async () => {
-//     const data = await getLotteryInfo();
-//     setLotteryData(data);
-//   })();
-// }, [address]);
-// useEffect(() => {
-//   if (!contracts.write?.lottery) return; // runs ONLY after wallet connects
+  (async () => {
+    const data = await getLotteryInfo();
+    setLotteryData(data);
+  })();
+}, [address]);
+useEffect(() => {
+  if (!contracts.write?.lottery) return; // runs ONLY after wallet connects
 
-//   (async () => {
-//     const data = await getLotteryInfo();
-//     setLotteryData(data);
-//     console.log("hiiiiii")
-//   })();
-// }, [contracts.write?.lottery]);
+  (async () => {
+    const data = await getLotteryInfo();
+    setLotteryData(data);
+    console.log("hiiiiii")
+  })();
+}, [contracts.write?.lottery]);
 
 
 
@@ -789,32 +789,7 @@ const App = () => {
   // -----------------------------------------------------
   // 📌 Handle service popup
   // -----------------------------------------------------
- const fetchData = async () => {
-    const data = await getLotteryInfo();
-    if (data) setLotteryData(data);
-  };
-
-  // 1. Load when Read contract is ready (Runs for everyone, even disconnected)
-  useEffect(() => {
-    if (!contracts.read?.lottery) return;
-    fetchData();
-  }, [contracts.read?.lottery]);
-
-  // 2. Refresh when wallet connects (Optional, but good for UI updates)
-  useEffect(() => {
-    if (!isConnected) return;
-    fetchData();
-  }, [isConnected]);
-
-  useEffect(() => {
-  if (!contracts.write?.lottery) return; // runs ONLY after wallet connects
-
-  (async () => {
-    const data = await getLotteryInfo();
-    setLotteryData(data);
-    console.log("hiiiiii")
-  })();
-}, [contracts.write?.lottery]);
+ 
  
   const handleServiceClick = (data) => {
     setServicePopupData(data);
