@@ -671,7 +671,7 @@
 
 //---------------####################################################################
 
-
+/////////////////11111111111111111111111111
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -680,10 +680,7 @@ import { useNavigate } from "react-router-dom";
 
 // RainbowKit + Wagmi
 import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
-import { useAccount,useConnect } from "wagmi";
-
-
-
+import { useAccount } from "wagmi";
 
 // Components
 import {
@@ -699,15 +696,13 @@ import {
 } from "./components/ComponentIndex.js";
 
 const App = () => {
-  // Smart contract logic
-  const { getLotteryInfo, contracts } = useWeb3();
+ 
+  const { getLotteryInfo } = useWeb3();
 
-  // Wagmi wallet state (reactive)
+  // Wagmi wallet state
   const { address, isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
   
-   
-
   const navigate = useNavigate();
 
   // UI state
@@ -716,81 +711,40 @@ const App = () => {
   const [showTicketsPopup, setShowTicketsPopup] = useState(false);
   const [showServicePopup, setShowServicePopup] = useState(false);
   const [servicePopupData, setServicePopupData] = useState(null);
-  // ⭐ ADD THESE ----------------------------------------
-  const { status } = useConnect();
-
- 
-
-// 
-
-
-
-
- 
-
-
 
   // Lottery data
   const [lotteryData, setLotteryData] = useState(null);
-
   const dummy = { maxTickets: 1000, totalSold: 450 };
 
   // -----------------------------------------------------
-  // 📌 Load lottery data when wallet OR contracts ready
+  // 📌 Load lottery data (Retry logic for Mobile)
   // -----------------------------------------------------
-  // Load on read-only or signer contract ready
-useEffect(() => {
-  if (!contracts.lottery) return;
-
-  (async () => {
+  const fetchData = async () => {
     const data = await getLotteryInfo();
-    setLotteryData(data);
-  })();
-}, [contracts.lottery]);
+    if (data) {
+      setLotteryData(data);
+    }
+  };
 
-// Load instantly when wallet connects
-useEffect(() => {
-  if (!isConnected) return;
+  // 1. Initial Load (Runs once on mount)
+  useEffect(() => {
+    fetchData();
+  }, []); // Run once on mount
 
-  (async () => {
-    const data = await getLotteryInfo();
-    setLotteryData(data);
-  })();
-}, [isConnected]);
-
-// Load when address changes
-useEffect(() => {
-  if (!address) return;
-
-  (async () => {
-    const data = await getLotteryInfo();
-    setLotteryData(data);
-  })();
-}, [address]);
-useEffect(() => {
-  if (!contracts.write?.lottery) return; // runs ONLY after wallet connects
-
-  (async () => {
-    const data = await getLotteryInfo();
-    setLotteryData(data);
-    console.log("hiiiiii")
-  })();
-}, [contracts.write?.lottery]);
-
-
-
-  
-
-  
-
-
-
+  // 2. Mobile Wallet Refresh: Re-fetch when connection settles
+  useEffect(() => {
+    if (isConnected) {
+      const timer = setTimeout(() => {
+        console.log("📲 Wallet connected, refreshing data...");
+        fetchData();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isConnected]); // Run when wallet status changes
 
   // -----------------------------------------------------
   // 📌 Handle service popup
   // -----------------------------------------------------
- 
- 
   const handleServiceClick = (data) => {
     setServicePopupData(data);
     setShowServicePopup(true);
@@ -804,22 +758,19 @@ useEffect(() => {
       imageUrl: "/serviceCards/Personal&Domestic.png",
       title: "Personal & Domestic",
       subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
-      driveLink:
-        "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view",
+      driveLink: "#",
     },
     {
       imageUrl: "/serviceCards/Professional&Web3Services.png",
       title: "Professional & Web3 Services",
       subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
-      driveLink:
-        "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view",
+      driveLink: "#",
     },
     {
       imageUrl: "/serviceCards/DR_AIDAN_WELLNECY.png",
       title: "DR_AIDAN_WELLNECY",
       subTitle: "Lorem ipsum dolor sit amet, consectetur aboris",
-      driveLink:
-        "https://drive.google.com/file/d/1w_u7KYBWLJ-iy9zYGQtfnSNjrol7uDmg/view",
+      driveLink: "#",
     },
   ];
 
@@ -865,37 +816,22 @@ useEffect(() => {
       {/* HERO BUTTONS */}
       <div className="flex gap-[24px] mt-[27px]">
         {/* CONNECT WALLET BUTTON */}
-
-      <ConnectButton.Custom>
-  {({ account, openConnectModal, openAccountModal }) => {
-    
-
-    return (
-      <HeroButton
-        onClick={account ? openAccountModal : openConnectModal}
-      >
-        {account ? "Connected" : "Connect Wallet"}
-      </HeroButton>
-    );
-  }}
-</ConnectButton.Custom>
-
-
-       
-
-
-        
-
+        <ConnectButton.Custom>
+          {({ account, openConnectModal, openAccountModal }) => {
+            return (
+              <HeroButton
+                onClick={account ? openAccountModal : openConnectModal}
+              >
+                {account ? "Connected" : "Connect Wallet"}
+              </HeroButton>
+            );
+          }}
+        </ConnectButton.Custom>
 
         {/* BUY TICKET */}
         <HeroButton
           onClick={() => {
             if (!isConnected) return openConnectModal();
-            // ⏳ Wait for signer to be ready
-    // if (!contracts.lottery || !contracts.lottery.runner) {
-    //   notify("⏳ Connecting wallet… please wait 1 sec");
-    //   return;
-    // }
             setShowBuyPopup(true);
           }}
         >
@@ -957,13 +893,7 @@ useEffect(() => {
           portfolioLink="https://your-portfolio-link.com"
         />
 
-        <div
-          className="
-            text-sm 
-            font-medium
-            text-transparent 
-            bg-clip-text
-          "
+        <div className="text-sm font-medium text-transparent bg-clip-text"
           style={{
             backgroundImage: "linear-gradient(90deg, #15BFFD, #9C37FD)",
             WebkitBackgroundClip: "text",
@@ -1015,7 +945,6 @@ useEffect(() => {
                 "Safety-First Policy",
               ]}
             />
-
             <p className="mt-6 text-center text-white/70 text-sm tracking-wide">
               For questions, contact me on{" "}
               <span className="text-blue-400">LinkedIn</span> or{" "}
@@ -1029,4 +958,3 @@ useEffect(() => {
 };
 
 export default App;
-

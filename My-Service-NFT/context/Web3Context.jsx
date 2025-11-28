@@ -434,14 +434,20 @@
 
 
 
-// // ------------------------------
+// // ---------------111111111111111111111111111111111111111111---------------
+// //////////////////////////////////////////////end////////
+
 "use client";
 
-import React, { createContext, useContext, useEffect, useState ,useRef} from "react";
-import { ethers } from "ethers";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import axios from "axios";
+import { formatUnits } from "viem"; 
+import { 
+  useAccount, 
+  usePublicClient, 
+  useWriteContract,
+} from "wagmi";
 
-import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import Toast from "../src/components/Toast.jsx";
 import { launchConfetti } from "../lib/confetti";
 
@@ -457,297 +463,235 @@ export const useWeb3 = () => useContext(Web3Context);
 
 export function Web3Provider({ children }) {
   const { address, isConnected } = useAccount();
-  const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient();
-
-  // TWO CONTRACT SETS: READ + WRITE
-  const [contracts, setContracts] = useState({
-    read: { lottery: null, nft: null },
-    write: { lottery: null, nft: null },
-  });
+  const publicClient = usePublicClient(); 
+  const { writeContractAsync } = useWriteContract(); 
 
   const [notifications, setNotifications] = useState([]);
   const notify = (msg) => setNotifications((p) => [...p, msg]);
-
   const [lastShownRound, setLastShownRound] = useState(null);
 
   // ---------------------------------------------------
-  // LOAD READ-ONLY CONTRACT (JsonRpcProvider)
+  // 🏆 WINNER CHECK (OFFLINE BACKEND)
   // ---------------------------------------------------
   useEffect(() => {
-    const provider = new ethers.JsonRpcProvider(
-      "https://eth-sepolia.g.alchemy.com/v2/uPRzvfSgWOxMDJ6LJQGAO"
-    );
+    async function checkWinner() {
+      if (!address) return;
+      try {
+        const res = await fetch("https://myservice-nft-1.onrender.com/winner-status");
+        const data = await res.json();
 
-    setContracts((prev) => ({
-      ...prev,
-      read: {
-        lottery: new ethers.Contract(lotteryAddress, lotteryAbi, provider),
-        nft: new ethers.Contract(nftAddress, nftAbi, provider),
-      },
-    }));
-    console.log("📢 Loaded Read-Only Contracts", contracts.read.lottery);
-  }, []);
+        if (!data.success) return;
+        
+        const { currentRound, lastWinnerRound, winnerAddress } = data;
+
+        if (currentRound !== lastWinnerRound) return;
+        if (lastShownRound === lastWinnerRound) return;
+
+        setLastShownRound(lastWinnerRound);
+
+        if (winnerAddress?.toLowerCase() === address.toLowerCase()) {
+          notify("🎉 YOU WON THE LOTTERY!! 🎉");
+          launchConfetti();
+        } else {
+          notify(`🏆 Round ${lastWinnerRound} Winner: ${winnerAddress?.slice(0, 15)}...`);
+        }
+      } catch (error) {
+        console.error("Winner check error", error);
+      }
+    }
+    checkWinner();
+  }, [address, lastShownRound]);
 
   // ---------------------------------------------------
-  // LOAD SIGNER CONTRACT (BrowserProvider)
+  // 🔥 POLLING DATA (Replaces Event Listeners)
   // ---------------------------------------------------
   useEffect(() => {
-    async function loadSigner() {
-      if (!isConnected || !walletClient) return;
+    if (!publicClient) return;
 
-      const provider = new ethers.BrowserProvider(walletClient.transport);
-      const signer = await provider.getSigner();
+    let lastRound = null;
+    let lastPrice = null;
+    let lastMax = null;
+    let lastLimit = null;
 
-      setContracts((prev) => ({
-        ...prev,
-        write: {
-          lottery: new ethers.Contract(lotteryAddress, lotteryAbi, signer),
-          nft: new ethers.Contract(nftAddress, nftAbi, signer),
-        },
-      }));
-      console.log("📢 Loaded Signer Contracts",contracts.write.lottery);
-    }
-    loadSigner();
-  }, [isConnected, walletClient]);
-
-
-  //for offline users
-
-useEffect(() => {
-  async function checkWinner() {
-    if (!address) return;
-
-    const res = await fetch("https://myservice-nft-1.onrender.com/winner-status");
-    const data = await res.json();
-
-    if (!data.success) return;
-    console.log("Winner Status:", data);
-
-    const { currentRound, lastWinnerRound, winnerAddress } = data;
-
-    //  No winner for the new round yet
-    if (currentRound !== lastWinnerRound) return;
-
-    //  Already shown for this round
-    if (lastShownRound === lastWinnerRound) return;
-
-    //  Notify all users
-    // notify(` Round ${lastWinnerRound} Winner: ${winnerAddress.slice(0,15)}...`);
-
-    // Mark as shown
-    setLastShownRound(lastWinnerRound);
-
-    //  If current user is the winner → CONFETTI
-    if (winnerAddress.toLowerCase() === address.toLowerCase()) {
-      notify("🎉 YOU WON THE LOTTERY!! 🎉");
-      launchConfetti();
-    }
-    else{
-      //  Notify all users
-    notify(`🏆 Round ${lastWinnerRound} Winner: ${winnerAddress.slice(0,15)}...`);
-    }
-  }
-
-  checkWinner();
-}, [address, lastShownRound]);
-//event listerners for lottery contract
-
-
-// -----------------------------------------------------
-  // 🔥 POLLING INSTEAD OF EVENT LISTENERS (No WebSocket)
-  // -----------------------------------------------------
- useEffect(() => {
-  // ❗ DO NOT START POLLING UNTIL contracts.read.lottery EXISTS
-  if (!contracts?.read?.lottery) return;
-
-  let lastRound = null;
-  let lastPrice = null;
-  let lastMax = null;
-  let lastLimit = null;
-
-  const interval = setInterval(async () => {
-    try {
-      const lottery = contracts.read.lottery;
-
-      const newRound = await lottery.currentRoundId();
-      const newPrice = await lottery.ticketPrice();
-      const newMax = await lottery.maxTickets();
-      const newLimit = await lottery.maxTicketsPerUser();
-
-      if (lastRound !== null && newRound !== lastRound) {
-        notify(`🎉 New Round Started! Round ${newRound}`);
-      }
-      lastRound = newRound;
-
-      if (lastPrice !== null && newPrice.toString() !== lastPrice.toString()) {
-        notify(`💲 Ticket Price Updated: ${ethers.formatUnits(newPrice, 6)} USDC`);
-      }
-      lastPrice = newPrice;
-
-      if (lastMax !== null && newMax.toString() !== lastMax.toString()) {
-        notify(`📦 Max Tickets Updated: ${newMax}`);
-      }
-      lastMax = newMax;
-
-      if (lastLimit !== null && newLimit.toString() !== lastLimit.toString()) {
-        notify(`👤 Max Tickets Per User Updated: ${newLimit}`);
-      }
-      lastLimit = newLimit;
-
-    } catch (err) {
-      console.log("Polling error:", err);
-    }
-  }, 3000);
-
-  return () => clearInterval(interval);
-
-}, [contracts?.read?.lottery]); // ⬅️ Run polling only when contract available
-
-
-
-
-
-const buyLock = useRef(false);
-
-useEffect(() => {
-  if (!publicClient) return;
-
-  window.pendingBuyInterval = setInterval(async () => {
-    const saved = localStorage.getItem("pendingBuy");
-    if (!saved || buyLock.current) return;
-
-    const data = JSON.parse(saved);
-    const { hash, name, email, amount, wallet } = data;
-
-    if (!hash) return;
-
-    try {
-      // 
-      console.log("⏳ Checking pending buy TX:", hash);
-
-      const receipt = await publicClient.waitForTransactionReceipt({
-        hash,
-        timeout: 1000 * 60 * 5,
-      });
-
-      if (receipt.status === "success") {
-        if (buyLock.current) return;
-        buyLock.current = true;
-
-        console.log("✅ TX confirmed! Sending to backend...");
-       
-
-        await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
-          name,
-          email,
-          walletAddress: wallet,
-          amount,
-          timestamp: Date.now(),
+    const interval = setInterval(async () => {
+      try {
+        const [newRound, newPrice, newMax, newLimit] = await publicClient.multicall({
+          contracts: [
+            { address: lotteryAddress, abi: lotteryAbi, functionName: 'currentRoundId' },
+            { address: lotteryAddress, abi: lotteryAbi, functionName: 'ticketPrice' },
+            { address: lotteryAddress, abi: lotteryAbi, functionName: 'maxTickets' },
+            { address: lotteryAddress, abi: lotteryAbi, functionName: 'maxTicketsPerUser' },
+          ],
+          allowFailure: false
         });
 
-        notify("🎉 Ticket Purchased Successfully!");
+        if (lastRound !== null && newRound !== lastRound) {
+          notify(`🎉 New Round Started! Round ${newRound}`);
+        }
+        lastRound = newRound;
 
-        localStorage.removeItem("pendingBuy");
+        if (lastPrice !== null && newPrice.toString() !== lastPrice.toString()) {
+          notify(`💲 Ticket Price Updated: ${formatUnits(newPrice, 6)} USDC`);
+        }
+        lastPrice = newPrice;
 
-        // reset lock
-        setTimeout(() => {
-          buyLock.current = false;
-        }, 500);
+        if (lastMax !== null && newMax.toString() !== lastMax.toString()) {
+          notify(`📦 Max Tickets Updated: ${newMax}`);
+        }
+        lastMax = newMax;
+
+        if (lastLimit !== null && newLimit.toString() !== lastLimit.toString()) {
+          notify(`👤 Max Tickets Per User Updated: ${newLimit}`);
+        }
+        lastLimit = newLimit;
+
+      } catch (err) {
+         // Silently fail on polling errors
       }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [publicClient]);
+
+  // ---------------------------------------------------
+  // ⏳ PENDING TRANSACTION RECOVERY (Mobile Fix)
+  // ---------------------------------------------------
+  const buyLock = useRef(false);
+
+  useEffect(() => {
+    if (!publicClient) return;
+
+    const pendingInterval = setInterval(async () => {
+      const saved = localStorage.getItem("pendingBuy");
+      if (!saved || buyLock.current) return;
+
+      const data = JSON.parse(saved);
+      const { hash, name, email, amount, wallet } = data;
+
+      if (!hash) return;
+
+      try {
+        console.log("⏳ Checking pending buy TX:", hash);
+        
+        const receipt = await publicClient.waitForTransactionReceipt({ 
+            hash, 
+            timeout: 60_000 
+        });
+
+        if (receipt.status === "success") {
+          if (buyLock.current) return;
+          buyLock.current = true;
+
+          console.log("✅ TX confirmed! Sending to backend...");
+
+          await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
+            name,
+            email,
+            walletAddress: wallet,
+            amount,
+            timestamp: Date.now(),
+          });
+
+          notify("🎉 Ticket Purchased Successfully!");
+          localStorage.removeItem("pendingBuy");
+
+          setTimeout(() => { buyLock.current = false; }, 500);
+        }
+      } catch (err) {
+        console.log("⏳ Waiting for confirmation...");
+      }
+    }, 2000);
+
+    return () => clearInterval(pendingInterval);
+  }, [publicClient]);
+
+  // ---------------------------------------------------
+  // 💰 BUY TICKET
+  // ---------------------------------------------------
+  const buyTicket = async (amount, userData) => {
+    try {
+      if (!isConnected) {
+        notify("⚠ Wallet not connected.");
+        return { success: false };
+      }
+
+      console.log("🚀 Initiating Buy Ticket...");
+
+      const hash = await writeContractAsync({
+        address: lotteryAddress,
+        abi: lotteryAbi,
+        functionName: 'buyTickets',
+        args: [amount],
+      });
+
+      console.log("✅ Transaction Sent:", hash);
+
+      localStorage.setItem("pendingBuy", JSON.stringify({
+        hash: hash,
+        name: userData.name,
+        email: userData.email,
+        amount,
+        wallet: address?.toLowerCase(),
+        timestamp: Date.now(),
+      }));
+
+      return { success: true };
+
     } catch (err) {
-      console.log("⏳ Waiting for confirmation…");
-    }
-  }, 2000);
-
-  return () => clearInterval(window.pendingBuyInterval);
-}, [publicClient]);
-
-
-
-/////////////////////////////
-/////////buy ticket//////////
-//////////////////////////
-const buyTicket = async (amount, userData) => {
-  try {
-    let retries = 0;
-
-    // 🔥 Wait for write contract (signer) to be ready
-    while ((!contracts.write.lottery) && retries < 10) {
-      await new Promise((r) => setTimeout(r, 300));
-      retries++;
-    }
-
-    console.log("🚀 Using write contract:", contracts.write.lottery);
-
-    if (!contracts.write.lottery) {
-      notify("⚠ Wallet not ready. Please reconnect.");
+      console.error("Buy Error:", err);
+      const msg = err.shortMessage || err.message || "Transaction failed";
+      notify(`❌ ${msg.slice(0, 50)}...`);
       return { success: false };
     }
-
-    // 🔥 WRITE contract → buy tickets
-    const tx = await contracts.write.lottery.buyTickets(amount);
-
-    // Save BEFORE MetaMask redirects
-    localStorage.setItem("pendingBuy", JSON.stringify({
-      hash: tx.hash,
-      name: userData.name,
-      email: userData.email,
-      amount,
-      wallet: address?.toLowerCase(),
-      timestamp: Date.now(),
-    }));
-
-    return { success: true };
-
-  } catch (err) {
-    console.error("Buy Error:", err);
-    notify("❌ Transaction failed");
-    return { success: false };
-  }
-};
-
-
-
+  };
 
   // ---------------------------------------------------
-  // READ LOTTERY INFO (always from READ CONTRACT)
+  // 📖 READ LOTTERY INFO
   // ---------------------------------------------------
   const getLotteryInfo = async () => {
-    if (!contracts.read.lottery) return null;
+    if (!publicClient) return null;
 
     try {
-      const [status, sold, price, max] = await Promise.all([
-        contracts.read.lottery.getLotteryStatus(),
-        contracts.read.lottery.getTotalTicketsSold(),
-        contracts.read.lottery.ticketPrice(),
-        contracts.read.lottery.maxTickets(),
-      ]);
+      const [status, sold, price, max] = await publicClient.multicall({
+        contracts: [
+          { address: lotteryAddress, abi: lotteryAbi, functionName: 'getLotteryStatus' },
+          { address: lotteryAddress, abi: lotteryAbi, functionName: 'getTotalTicketsSold' },
+          { address: lotteryAddress, abi: lotteryAbi, functionName: 'ticketPrice' },
+          { address: lotteryAddress, abi: lotteryAbi, functionName: 'maxTickets' },
+        ],
+        allowFailure: false
+      });
 
       return {
         status,
         totalSold: Number(sold),
-        ticketPrice: ethers.formatUnits(price, 6),
+        ticketPrice: formatUnits(price, 6),
         maxTickets: Number(max),
       };
     } catch (e) {
+      console.error("Read Error:", e);
       return null;
     }
   };
 
   const getMsaAgreement = async () => {
     try {
-      return await contracts.read.lottery.getMsaURI();
+      if (!publicClient) return null;
+      return await publicClient.readContract({
+        address: lotteryAddress,
+        abi: lotteryAbi,
+        functionName: 'getMsaURI',
+      });
     } catch {
       return null;
     }
   };
 
   return (
-    <Web3Context
+    <Web3Context.Provider
       value={{
         address,
-        contracts,
+        isConnected,
         buyTicket,
         getLotteryInfo,
         getMsaAgreement,
@@ -756,16 +700,13 @@ const buyTicket = async (amount, userData) => {
       }}
     >
       {children}
-
       {notifications.map((msg, i) => (
         <Toast
           key={i}
           message={msg}
-          onClose={() =>
-            setNotifications((prev) => prev.filter((_, idx) => idx !== i))
-          }
+          onClose={() => setNotifications((p) => p.filter((_, idx) => idx !== i))}
         />
       ))}
-    </Web3Context>
+    </Web3Context.Provider>
   );
 }
