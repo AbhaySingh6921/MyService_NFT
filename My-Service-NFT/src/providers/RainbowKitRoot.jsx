@@ -6,11 +6,11 @@ import {
 } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
 import {
-  // mainnet,
-  // polygon,
-  // optimism,
-  // arbitrum,
-  // base,
+  mainnet,
+  polygon,
+  optimism,
+  arbitrum,
+  base,
   sepolia,
 } from "wagmi/chains";
 import {
@@ -23,7 +23,7 @@ const queryClient = new QueryClient();
 const config = getDefaultConfig({
   appName: "My RainbowKit App",
   projectId: "6dd15a3684137adf8eb5ed126f061236",
-  chains: [polygon, optimism, arbitrum, base, sepolia],
+  chains: [mainnet, polygon, optimism, arbitrum, base, sepolia],
   ssr: true,
 });
 
