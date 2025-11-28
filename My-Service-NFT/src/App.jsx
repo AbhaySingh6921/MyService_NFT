@@ -739,34 +739,34 @@ const App = () => {
   // 📌 Load lottery data when wallet OR contracts ready
   // -----------------------------------------------------
   // Load on read-only or signer contract ready
-// useEffect(() => {
-//   if (!contracts.lottery) return;
+useEffect(() => {
+  if (!contracts.lottery) return;
 
-//   (async () => {
-//     const data = await getLotteryInfo();
-//     setLotteryData(data);
-//   })();
-// }, [contracts.lottery]);
+  (async () => {
+    const data = await getLotteryInfo();
+    setLotteryData(data);
+  })();
+}, [contracts.lottery]);
 
-// // Load instantly when wallet connects
-// useEffect(() => {
-//   if (!isConnected) return;
+// Load instantly when wallet connects
+useEffect(() => {
+  if (!isConnected) return;
 
-//   (async () => {
-//     const data = await getLotteryInfo();
-//     setLotteryData(data);
-//   })();
-// }, [isConnected]);
+  (async () => {
+    const data = await getLotteryInfo();
+    setLotteryData(data);
+  })();
+}, [isConnected]);
 
-// // Load when address changes
-// useEffect(() => {
-//   if (!address) return;
+// Load when address changes
+useEffect(() => {
+  if (!address) return;
 
-//   (async () => {
-//     const data = await getLotteryInfo();
-//     setLotteryData(data);
-//   })();
-// }, [address]);
+  (async () => {
+    const data = await getLotteryInfo();
+    setLotteryData(data);
+  })();
+}, [address]);
 useEffect(() => {
   if (!contracts.write?.lottery) return; // runs ONLY after wallet connects
 
