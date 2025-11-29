@@ -183,7 +183,7 @@ export function Web3Provider({ children }) {
         return { success: false };
       }
 
-      console.log("🚀 Initiating Buy Ticket...");
+      // console.log("🚀 Initiating Buy Ticket...");
 
       const hash = await writeContractAsync({
         address: lotteryAddress,
@@ -192,7 +192,7 @@ export function Web3Provider({ children }) {
         args: [amount],
       });
 
-      console.log("✅ Transaction Sent:", hash);
+      // console.log("✅ Transaction Sent:", hash);
 
       localStorage.setItem("pendingBuy", JSON.stringify({
         hash: hash,
@@ -301,7 +301,7 @@ const getLotteryInfo = async () => {
 
     // Extract data
     const data = json.data;
-    console.log("Lottery Info:", data);
+    // console.log("Lottery Info:", data);
 
     return {
       currentRoundId: data.currentRoundId,

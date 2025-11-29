@@ -44,7 +44,7 @@ const config = getDefaultConfig({
       name: "MyService NFT",
       description: "Service Lottery + NFT dApp",
       url: "https://www.my10years.space", // <-- IMPORTANT!
-      
+      icons: ["https://www.my10years.space/icon.png"]
     }
   },
 
