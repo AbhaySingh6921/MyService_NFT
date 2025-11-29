@@ -5,25 +5,33 @@ import { useWeb3 } from "../../../context/Web3Context";
 import MsaPopup from "../MsaPopup";
 
 const Agreement = ({ documentName, policyList }) => {
-  const { getMsaAgreement } = useWeb3();
+  const { getMsaAgreement } = useWeb3();   // <-- use backend fetch function
   const [showMsa, setShowMsa] = useState(false);
   const [msaData, setMsaData] = useState(null);
 
   const openAgreement = async () => {
+    // 1️⃣ Get URI from backend route
     const uri = await getMsaAgreement();
+
     if (!uri) {
-      alert("Unable to load agreement.");
+      alert("Unable to load agreement document.");
       return;
     }
 
     try {
+      // 2️⃣ Fetch metadata JSON from the URI (IPFS / HTTPS)
       const res = await fetch(uri);
       const json = await res.json();
+      // console.log("✅ JSON Loaded:", json);
+      // console.log("📄 MSA Document URI:", uri);
+
+      // 3️⃣ Store + open popup
       setMsaData(json);
       setShowMsa(true);
+
     } catch (err) {
-      console.error("JSON Load Error:", err);
-      alert("Error parsing agreement JSON.");
+      console.error("❌ JSON Load Error:", err);
+      alert("Error reading agreement file.");
     }
   };
 
@@ -44,7 +52,12 @@ const Agreement = ({ documentName, policyList }) => {
         </ul>
       </div>
 
-      {showMsa && <MsaPopup msa={msaData} onClose={() => setShowMsa(false)} />}
+      {showMsa && (
+        <MsaPopup 
+          msa={msaData}
+          onClose={() => setShowMsa(false)}
+        />
+      )}
     </>
   );
 };

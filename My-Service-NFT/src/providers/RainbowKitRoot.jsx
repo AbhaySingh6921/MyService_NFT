@@ -21,8 +21,8 @@ import {
 const queryClient = new QueryClient();
 
 const config = getDefaultConfig({
-  appName: "My RainbowKit App",
-  projectId: "6dd15a3684137adf8eb5ed126f061236",
+  appName: "MyService NFT",
+  projectId: "bf59cafc9ab6aee1a645b92a22cf252e",
   chains: [mainnet, polygon, optimism, arbitrum, base, sepolia],
   ssr: true,
 });

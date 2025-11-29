@@ -245,61 +245,31 @@ export function Web3Provider({ children }) {
   // ---------------------------------------------------
   // 📖 READ LOTTERY INFO
   // ---------------------------------------------------
-const getLotteryInfo = async () => {
-  if (!publicClient) return null;
-
-  try {
-    // Build the multicall (only two functions)
-    const baseCalls = [
-      { address: lotteryAddress, abi: lotteryAbi, functionName: "maxTickets" },
-      { address: lotteryAddress, abi: lotteryAbi, functionName: "getTotalTicketsSold" },
-    ];
-
-    // Execute calls
-    const results = await publicClient.multicall({
-      contracts: baseCalls,
-      allowFailure: false,
-    });
-
-    // Safety check
-    if (!results || results.length < 2) {
-      console.warn("❗ Multicall returned no data");
-      return null;
-    }
-
-    // Extract values
-    const maxT = results[0];
-    const sold = results[1];
-
-    return {
-      maxTickets: Number(maxT),
-      totalSold: Number(sold),
-    };
-
-  } catch (err) {
-    console.error("Read Error:", err);
-    return null;
-  }
-};
-
 // const getLotteryInfo = async () => {
 //   if (!publicClient) return null;
 
 //   try {
+//     // Build the multicall (only two functions)
 //     const baseCalls = [
 //       { address: lotteryAddress, abi: lotteryAbi, functionName: "maxTickets" },
 //       { address: lotteryAddress, abi: lotteryAbi, functionName: "getTotalTicketsSold" },
 //     ];
 
+//     // Execute calls
 //     const results = await publicClient.multicall({
 //       contracts: baseCalls,
-//       allowFailure: true,
+//       allowFailure: false,
 //     });
 
-//     if (!results || results.length < 2) return null;
+//     // Safety check
+//     if (!results || results.length < 2) {
+//       console.warn("❗ Multicall returned no data");
+//       return null;
+//     }
 
-//     const maxT = results[0]?.result ?? 0n;
-//     const sold = results[1]?.result ?? 0n;
+//     // Extract values
+//     const maxT = results[0];
+//     const sold = results[1];
 
 //     return {
 //       maxTickets: Number(maxT),
@@ -312,21 +282,75 @@ const getLotteryInfo = async () => {
 //   }
 // };
 
+const getLotteryInfo = async () => {
+  try {
+    const res = await fetch("https://myservice-nft-1.onrender.com/lottery_info");
+    // const res = await fetch("http://localhost:5000/lottery_info");
 
-
-
-  const getMsaAgreement = async () => {
-    try {
-      if (!publicClient) return null;
-      return await publicClient.readContract({
-        address: lotteryAddress,
-        abi: lotteryAbi,
-        functionName: 'getMsaURI',
-      });
-    } catch {
+    if (!res.ok) {
+      console.error("❌ Failed to fetch lottery info. Status:", res.status);
       return null;
     }
-  };
+
+    const json = await res.json();
+
+    if (!json.success) {
+      console.error("❌ Backend returned error:", json.error);
+      return null;
+    }
+
+    // Extract data
+    const data = json.data;
+    console.log("Lottery Info:", data);
+
+    return {
+      currentRoundId: data.currentRoundId,
+      ticketPrice: data.ticketPrice,
+      maxTickets: data.maxTickets,
+      maxTicketsPerUser: data.maxTicketsPerUser,
+      totalTicketsSold: data.totalTicketsSold,
+    };
+
+  } catch (err) {
+    console.error("❌ Error fetching lottery info:", err);
+    return null;
+  }
+};
+
+
+
+
+
+
+
+
+const getMsaAgreement = async () => {
+  try {
+    const res = await fetch("https://myservice-nft-1.onrender.com/lottery_info");
+
+    if (!res.ok) {
+      console.error("❌ Failed to fetch MSA data. Status:", res.status);
+      return null;
+    }
+
+    const json = await res.json();
+
+    if (!json.success) {
+      console.error("❌ Backend returned error:", json.error);
+      return null;
+    }
+
+    const data = json.data;
+
+    return data.msaURI || null;
+
+  } catch (err) {
+    console.error("❌ MSA fetch error:", err);
+    return null;
+  }
+};
+
+
 
   return (
   <>

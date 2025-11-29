@@ -41,17 +41,43 @@ const nftContract = new ethers.Contract(
   ServiceNFTABI,
   provider
 );
-// console.log("✅ Provider connected to:",contract);
 
-// console.log("✅ Contract initialized with:", process.env.LOTTERY_ADDRESS);
 
-// ------------------------------
-// UTILITY: GET ROUND ID
-// ------------------------------
 export const getCurrentRoundId = async () => {
   const round = await contract.currentRoundId();
   return Number(round);
 };
+
+export const lotteryInfo = async () => {
+  try {
+    // Read values directly from contract
+    const currentRoundId = Number(await contract.currentRoundId());
+    const ticketPrice = Number(await contract.ticketPrice());
+    const maxTickets = Number(await contract.maxTickets());
+    const maxTicketsPerUser = Number(await contract.maxTicketsPerUser());
+
+    // getTotalTicketsSold(currentRoundId)
+    const totalTicketsSold = Number(
+      await contract.getTotalTicketsSold()
+    );
+    // console.log("🎫 Total Tickets Sold for round", currentRoundId, ":", totalTicketsSold);
+    const msaURI = await contract.getMsaURI(); 
+
+    return {
+      currentRoundId,
+      ticketPrice,
+      maxTickets,
+      maxTicketsPerUser,
+      totalTicketsSold,
+      msaURI, 
+    };
+
+  } catch (error) {
+    console.error("❌ Error fetching lottery info:", error);
+    throw error;
+  }
+};
+
 
 // ------------------------------
 // EVENT 1: TICKETS PURCHASED

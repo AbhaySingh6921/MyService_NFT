@@ -6,6 +6,7 @@ import buyTicketRoute from "./routes/buyTicketRoute.js";
 import participantsRoute from "./routes/participantsRoute.js";
 import userTicketsRoute from "./routes/userTicketsRoute.js";
 import winnerStatusRoute from "./routes/winner_statusRoute.js";
+import lotteryInfoRoute from "./routes/lotteryInfoRoute.js";
 
 
 
@@ -21,6 +22,9 @@ app.use("/", buyTicketRoute);
 app.use("/", participantsRoute);
 app.use("/", userTicketsRoute);
 app.use("/", winnerStatusRoute); // Add other routes as needed
+
+app.use("/", lotteryInfoRoute);
+
 
 
 // Health check route (optional)

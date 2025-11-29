@@ -43,6 +43,14 @@ const App = () => {
   // -----------------------------------------------------
   //  Load lottery data (Retry logic for Mobile)
   // -----------------------------------------------------
+
+
+
+
+  useEffect(() => {
+  console.log("🚀 App opened → Fetching lottery info...");
+  fetchData();
+}, []);
   const fetchData = async () => {
     const data = await getLotteryInfo();
     if (data) {
@@ -50,16 +58,8 @@ const App = () => {
     }
   };
 
-//   ///new add ....////
-//   useEffect(() => {
-//   fetchData();
-// }, []);
-// useEffect(() => {
-//   if (!isConnected) return;
 
-//   const timer = setTimeout(fetchData, 600);
-//   return () => clearTimeout(timer);
-// }, [isConnected]);
+
 
 
 
@@ -145,8 +145,9 @@ const App = () => {
       </h1>
 
       <p className="subHeading">
-        I’m offering 10 years (31,320 hours) of my time as a single NFT,
-        available through a raffle lottery.
+       ’m offering 10 years (31,320 hours) of my time as a single NFT, available through a raffle lottery.
+       Whoever wins the NFT gets exclusive access to 200+ services — personal, domestic, professional, farming, and even emergency health-support donations.
+       The NFT is fully transferable and can be resold anytime.
       </p>
 
       {/* HERO BUTTONS */}
@@ -244,10 +245,17 @@ const App = () => {
       <section className="lotteryDetails">
         <h2 className="mb-[12px]">Lottery Details</h2>
 
-        <ProgressBar
+        {/* <ProgressBar
           current={lotteryData?.totalSold ?? dummy.totalSold}
           total={lotteryData?.maxTickets ?? dummy.maxTickets}
-        />
+        /> */}
+        <ProgressBar
+  current={lotteryData?.totalTicketsSold ?? dummy.totalSold}
+  total={lotteryData?.maxTickets ?? dummy.maxTickets}
+/>
+
+        
+
       </section>
 
       {/* SERVICES */}
