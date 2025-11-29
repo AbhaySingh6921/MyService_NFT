@@ -1,7 +1,3 @@
-
-
-"use client";
-
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { formatUnits } from "viem"; 
@@ -149,6 +145,7 @@ export function Web3Provider({ children }) {
           buyLock.current = true;
 
           console.log("✅ TX confirmed! Sending to backend...");
+          notify("🎉 Ticket Purchased Successfully!");
 
           await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
             name,
@@ -158,7 +155,7 @@ export function Web3Provider({ children }) {
             timestamp: Date.now(),
           });
 
-          notify("🎉 Ticket Purchased Successfully!");
+          
           localStorage.removeItem("pendingBuy");
 
           setTimeout(() => { buyLock.current = false; }, 500);
@@ -228,7 +225,8 @@ export function Web3Provider({ children }) {
     });
      await publicClient.waitForTransactionReceipt({ hash: approveTxnHash });
 
-    notify("⏳ Approval sent…");
+    console.log("✅ Approval successful:", approveTxnHash);
+    notify("✅ USDC Approval Successful");
 
     return { success: true, approveTxnHash };
   } catch (e) {
@@ -294,6 +292,7 @@ const getLotteryInfo = async () => {
   };
 
   return (
+  <>
     <Web3Context.Provider
       value={{
         address,
@@ -307,13 +306,19 @@ const getLotteryInfo = async () => {
       }}
     >
       {children}
-      {notifications.map((msg, i) => (
-        <Toast
-          key={i}
-          message={msg}
-          onClose={() => setNotifications((p) => p.filter((_, idx) => idx !== i))}
-        />
-      ))}
     </Web3Context.Provider>
-  );
+
+    {/* Toasts OUTSIDE provider */}
+    {notifications.map((msg, i) => (
+      <Toast
+        key={i}
+        message={msg}
+        onClose={() => 
+          setNotifications((prev) => prev.filter((_, idx) => idx !== i))
+        }
+      />
+    ))}
+  </>
+);
+
 }

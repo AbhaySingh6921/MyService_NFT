@@ -118,19 +118,24 @@ export default function BuyTicketpop({ onClose }) {
       }
       
       const usdcNeeded = qty * pricePerTicket;
+      notify("⏳ Plese Approval USDC");
       const approval = await approveUSDC(usdcNeeded);
 
-    if (!approval.success) return; // 
+    if (!approval.success) {
+      notify("❌ Approval failed");
+      return; 
+    }
+      // if(approval.success) notify("✅ Approval successful");
 
-    notify("⏳ Approval confirmed… Now buying tickets…");
-
+    
+      // notify("⏳Approval for buying tickets...");
       setLoading(true);
-      notify("⏳ Sending transaction...");
+      
 
       const res = await buyTicket(qty, { name, email });
 
       if (res.success) {
-         notify("waiting for confirmation.......");
+         notify("waiting for confirmation...");
          onClose();
       }
     } catch (err) {

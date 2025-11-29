@@ -1,6 +1,3 @@
-
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { useWeb3 } from "../context/Web3Context";
 import { useNavigate } from "react-router-dom";
@@ -44,7 +41,7 @@ const App = () => {
   const dummy = { maxTickets: 1000, totalSold: 450 };
 
   // -----------------------------------------------------
-  // 📌 Load lottery data (Retry logic for Mobile)
+  //  Load lottery data (Retry logic for Mobile)
   // -----------------------------------------------------
   const fetchData = async () => {
     const data = await getLotteryInfo();
@@ -54,7 +51,6 @@ const App = () => {
   };
 
   
-
   // // 2. Mobile Wallet Refresh: Re-fetch when connection settles
   useEffect(() => {
     if (isConnected) {
@@ -67,7 +63,7 @@ const App = () => {
   }, [isConnected]); // Run when wallet status changes
 
   // // -----------------------------------------------------
-  // // 📌 Handle service popup
+  // //  Handle service popup
   // // -----------------------------------------------------
   const handleServiceClick = (data) => {
     setServicePopupData(data);
