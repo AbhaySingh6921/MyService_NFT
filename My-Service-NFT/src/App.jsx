@@ -50,8 +50,21 @@ const App = () => {
     }
   };
 
+//   ///new add ....////
+//   useEffect(() => {
+//   fetchData();
+// }, []);
+// useEffect(() => {
+//   if (!isConnected) return;
+
+//   const timer = setTimeout(fetchData, 600);
+//   return () => clearTimeout(timer);
+// }, [isConnected]);
+
+
+
   
-  // // 2. Mobile Wallet Refresh: Re-fetch when connection settles
+  // 2. Mobile Wallet Refresh: Re-fetch when connection settles
   useEffect(() => {
     if (isConnected) {
       const timer = setTimeout(() => {
@@ -61,6 +74,9 @@ const App = () => {
       return () => clearTimeout(timer);
     }
   }, [isConnected]); // Run when wallet status changes
+
+
+
 
   // // -----------------------------------------------------
   // //  Handle service popup

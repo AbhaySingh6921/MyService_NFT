@@ -282,6 +282,38 @@ const getLotteryInfo = async () => {
   }
 };
 
+// const getLotteryInfo = async () => {
+//   if (!publicClient) return null;
+
+//   try {
+//     const baseCalls = [
+//       { address: lotteryAddress, abi: lotteryAbi, functionName: "maxTickets" },
+//       { address: lotteryAddress, abi: lotteryAbi, functionName: "getTotalTicketsSold" },
+//     ];
+
+//     const results = await publicClient.multicall({
+//       contracts: baseCalls,
+//       allowFailure: true,
+//     });
+
+//     if (!results || results.length < 2) return null;
+
+//     const maxT = results[0]?.result ?? 0n;
+//     const sold = results[1]?.result ?? 0n;
+
+//     return {
+//       maxTickets: Number(maxT),
+//       totalSold: Number(sold),
+//     };
+
+//   } catch (err) {
+//     console.error("Read Error:", err);
+//     return null;
+//   }
+// };
+
+
+
 
   const getMsaAgreement = async () => {
     try {
