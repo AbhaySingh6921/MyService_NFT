@@ -41,8 +41,9 @@ const nftContract = new ethers.Contract(
   ServiceNFTABI,
   provider
 );
+// console.log("✅ Provider connected to:",contract);
 
-console.log("✅ Contract initialized with:", process.env.LOTTERY_ADDRESS);
+// console.log("✅ Contract initialized with:", process.env.LOTTERY_ADDRESS);
 
 // ------------------------------
 // UTILITY: GET ROUND ID

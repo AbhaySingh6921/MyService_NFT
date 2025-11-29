@@ -29,7 +29,12 @@ export function Web3Provider({ children }) {
   const { writeContractAsync } = useWriteContract(); 
 
   const [notifications, setNotifications] = useState([]);
-  const notify = (msg) => setNotifications((p) => [...p, msg]);
+  const notify = (msg) =>
+  setNotifications((prev) => [
+    ...prev,
+    { id: Date.now(), msg }
+  ]);
+
   const [lastShownRound, setLastShownRound] = useState(null);
 
   // ---------------------------------------------------
@@ -309,15 +314,18 @@ const getLotteryInfo = async () => {
     </Web3Context.Provider>
 
     {/* Toasts OUTSIDE provider */}
-    {notifications.map((msg, i) => (
-      <Toast
-        key={i}
-        message={msg}
-        onClose={() => 
-          setNotifications((prev) => prev.filter((_, idx) => idx !== i))
-        }
-      />
-    ))}
+    {notifications.map((t) => (
+  <Toast
+    key={t.id}
+    message={t.msg}
+    onClose={() =>
+      setNotifications((prev) =>
+        prev.filter((x) => x.id !== t.id)
+      )
+    }
+  />
+))}
+
   </>
 );
 
