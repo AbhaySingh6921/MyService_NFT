@@ -36,6 +36,8 @@ const App = () => {
   const [showServicePopup, setShowServicePopup] = useState(false);
   const [servicePopupData, setServicePopupData] = useState(null);
 
+
+
   // Lottery data
   const [lotteryData, setLotteryData] = useState(null);
   const dummy = { maxTickets: 1000, totalSold: 450 };
@@ -173,7 +175,7 @@ const App = () => {
             setShowBuyPopup(true);
           }}
         >
-          Buy Tickets
+         Buy Ticket
         </HeroButton>
 
         {showBuyPopup && (
@@ -182,6 +184,7 @@ const App = () => {
               setShowBuyPopup(false);
               navigate("/");
             }}
+            
           />
         )}
 

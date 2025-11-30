@@ -104,47 +104,55 @@ export default function BuyTicketpop({ onClose }) {
   // BUY
   // -----------------------------------------------------------
   const handleBuy = async () => {
-    try {
-      if (!isConnected) return openConnectModal();
-    const qty = Number(amount);
-      if (!name || !email) {
-        notify("⚠ Name & Email required.");
-        return;
-      }
+  try {
+    if (!isConnected) return openConnectModal();
 
-      if (!qty || qty < 1 || qty > allowedToBuy) {
-        notify("⚠ Invalid ticket amount.");
-        return;
-      }
-      
-      const usdcNeeded = qty * pricePerTicket;
-      notify("⏳ Plese Approval USDC");
-      const approval = await approveUSDC(usdcNeeded);
+    const qty = Number(amount);
+
+    if (!name || !email) {
+      notify("⚠ Name & Email required.");
+      return;
+    }
+
+    if (!qty || qty < 1 || qty > allowedToBuy) {
+      notify("⚠ Invalid ticket amount.");
+      return;
+    }
+
+    // Enable loading BEFORE approval
+    setLoading(true);
+   
+    // notify(`⏳ Please Approve ${qty * pricePerTicket} USDC`);
+
+    const usdcNeeded = qty * pricePerTicket;
+    const approval = await approveUSDC(usdcNeeded);
 
     if (!approval.success) {
       notify("❌ Approval failed");
-      return; 
-    }
-      // if(approval.success) notify("✅ Approval successful");
-
-    
-      // notify("⏳Approval for buying tickets...");
-      setLoading(true);
-      
-
-      const res = await buyTicket(qty, { name, email });
-
-      if (res.success) {
-         notify("waiting for confirmation...");
-         onClose();
-      }
-    } catch (err) {
-      console.error(err);
-      notify("❌ Transaction failed");
-    } finally {
       setLoading(false);
+      return;
     }
-  };
+
+    notify("⏳ Approval confirmed… Now buying tickets…");
+
+    // BUY TICKETS
+    const res = await buyTicket(qty, { name, email });
+
+    if (res.success) {
+      notify("⏳ Waiting for buying confirmation...");
+      onClose();
+     
+    }
+
+  } catch (err) {
+    console.error(err);
+    notify("❌ Transaction failed");
+  } finally {
+    // Final reset
+    setLoading(false);
+  }
+};
+
 
   // -----------------------------------------------------------
   // UI (Unchanged)

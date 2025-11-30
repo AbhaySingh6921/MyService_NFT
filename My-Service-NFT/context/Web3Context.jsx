@@ -34,6 +34,7 @@ export function Web3Provider({ children }) {
     ...prev,
     { id: Date.now(), msg }
   ]);
+  
 
   const [lastShownRound, setLastShownRound] = useState(null);
 
@@ -138,7 +139,7 @@ export function Web3Provider({ children }) {
       if (!hash) return;
 
       try {
-        console.log("⏳ Checking pending buy TX:", hash);
+        // console.log("⏳ Checking pending buy TX:", hash);
         
         const receipt = await publicClient.waitForTransactionReceipt({ 
             hash, 
@@ -151,6 +152,7 @@ export function Web3Provider({ children }) {
 
           console.log("✅ TX confirmed! Sending to backend...");
           notify("🎉 Ticket Purchased Successfully!");
+
 
           await axios.post("https://myservice-nft-1.onrender.com/buyticket", {
             name,
@@ -213,7 +215,9 @@ export function Web3Provider({ children }) {
     }
   };
 
-  const approveUSDC = async (amount) => {
+
+
+const approveUSDC = async (amount) => {
   try {
     if (!isConnected) {
       notify("⚠ Please connect your wallet first.");
@@ -222,18 +226,32 @@ export function Web3Provider({ children }) {
 
     const weiAmount = parseUnits(amount.toString(), 6); 
 
+    // 1️⃣ Notify user approval started
+    notify(`⏳Please Approving ${amount} USDC`);
+    await new Promise(r => setTimeout(r, 100)); // smooth UI
+
+    // 2️⃣ Send approval transaction
     const approveTxnHash = await writeContractAsync({
-      address: usdcAddress, 
+      address: usdcAddress,
       abi: erc20Abi,
       functionName: "approve",
       args: [lotteryAddress, weiAmount],
     });
-     await publicClient.waitForTransactionReceipt({ hash: approveTxnHash });
 
-    console.log("✅ Approval successful:", approveTxnHash);
-    notify("✅ USDC Approval Successful");
+    // 3️⃣ Notify waiting status
+    notify("⏳ Waiting for approval confirmation...");
+    await new Promise(r => setTimeout(r, 100)); // smooth UI
+
+    // 4️⃣ Wait for confirmation
+    await publicClient.waitForTransactionReceipt({
+      hash: approveTxnHash,
+    });
+
+    // // 5️⃣ Success final message
+    // notify("✅ Approval confirmed!");
 
     return { success: true, approveTxnHash };
+
   } catch (e) {
     console.error("Approval Error:", e);
     notify("❌ Approval failed");
@@ -241,46 +259,6 @@ export function Web3Provider({ children }) {
   }
 };
 
-
-  // ---------------------------------------------------
-  // 📖 READ LOTTERY INFO
-  // ---------------------------------------------------
-// const getLotteryInfo = async () => {
-//   if (!publicClient) return null;
-
-//   try {
-//     // Build the multicall (only two functions)
-//     const baseCalls = [
-//       { address: lotteryAddress, abi: lotteryAbi, functionName: "maxTickets" },
-//       { address: lotteryAddress, abi: lotteryAbi, functionName: "getTotalTicketsSold" },
-//     ];
-
-//     // Execute calls
-//     const results = await publicClient.multicall({
-//       contracts: baseCalls,
-//       allowFailure: false,
-//     });
-
-//     // Safety check
-//     if (!results || results.length < 2) {
-//       console.warn("❗ Multicall returned no data");
-//       return null;
-//     }
-
-//     // Extract values
-//     const maxT = results[0];
-//     const sold = results[1];
-
-//     return {
-//       maxTickets: Number(maxT),
-//       totalSold: Number(sold),
-//     };
-
-//   } catch (err) {
-//     console.error("Read Error:", err);
-//     return null;
-//   }
-// };
 
 const getLotteryInfo = async () => {
   try {
@@ -316,13 +294,6 @@ const getLotteryInfo = async () => {
     return null;
   }
 };
-
-
-
-
-
-
-
 
 const getMsaAgreement = async () => {
   try {
