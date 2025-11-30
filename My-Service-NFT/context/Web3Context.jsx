@@ -263,7 +263,7 @@ const approveUSDC = async (amount) => {
 const getLotteryInfo = async (wallet) => {
   try {
     const res = await axios.get(
-      `http://localhost:5000/lottery_info?wallet=${wallet}`
+      `https://myservice-nft-1.onrender.com/lottery_info?wallet=${wallet}`
     );
 
     // Axios always returns res.data
