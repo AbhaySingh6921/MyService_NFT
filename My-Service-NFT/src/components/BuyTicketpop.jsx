@@ -14,7 +14,7 @@ import { useAccount, usePublicClient } from "wagmi";
 import { lotteryAddress, lotteryAbi } from "../../lib/ContractConfig";
 
 import axios from "axios";
-import { set } from "mongoose";
+
 
 
 export default function BuyTicketpop({ onClose }) {
