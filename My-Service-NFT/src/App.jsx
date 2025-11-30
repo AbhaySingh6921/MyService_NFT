@@ -48,25 +48,19 @@ const App = () => {
 
 
 
+const fetchData = async () => {
+  const wallet = address || "0x0000000000000000000000000000000000000000";
+  const data = await getLotteryInfo(wallet);
+  if (data) setLotteryData(data);
+};
+
 
   useEffect(() => {
   console.log("🚀 App opened → Fetching lottery info...");
   fetchData();
 }, []);
-  const fetchData = async () => {
-    const data = await getLotteryInfo();
-    if (data) {
-      setLotteryData(data);
-    }
-  };
 
-
-
-
-
-
-  
-  // 2. Mobile Wallet Refresh: Re-fetch when connection settles
+// 2. Mobile Wallet Refresh: Re-fetch when connection settles
   useEffect(() => {
     if (isConnected) {
       const timer = setTimeout(() => {

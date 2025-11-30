@@ -260,26 +260,20 @@ const approveUSDC = async (amount) => {
 };
 
 
-const getLotteryInfo = async () => {
+const getLotteryInfo = async (wallet) => {
   try {
-    const res = await fetch("https://myservice-nft-1.onrender.com/lottery_info");
-    // const res = await fetch("http://localhost:5000/lottery_info");
+    const res = await axios.get(
+      `http://localhost:5000/lottery_info?wallet=${wallet}`
+    );
 
-    if (!res.ok) {
-      console.error("❌ Failed to fetch lottery info. Status:", res.status);
+    // Axios always returns res.data
+    if (!res.data || !res.data.success) {
+      console.error("❌ Backend returned error:", res.data?.error);
       return null;
     }
 
-    const json = await res.json();
-
-    if (!json.success) {
-      console.error("❌ Backend returned error:", json.error);
-      return null;
-    }
-
-    // Extract data
-    const data = json.data;
-    // console.log("Lottery Info:", data);
+    const data = res.data.data;
+    console.log("Lottery info fetched:", data);
 
     return {
       currentRoundId: data.currentRoundId,
@@ -287,6 +281,7 @@ const getLotteryInfo = async () => {
       maxTickets: data.maxTickets,
       maxTicketsPerUser: data.maxTicketsPerUser,
       totalTicketsSold: data.totalTicketsSold,
+      userTickets: data.userTickets || 0,
     };
 
   } catch (err) {
@@ -294,6 +289,7 @@ const getLotteryInfo = async () => {
     return null;
   }
 };
+
 
 const getMsaAgreement = async () => {
   try {

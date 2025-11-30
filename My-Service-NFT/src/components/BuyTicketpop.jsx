@@ -13,9 +13,13 @@ import { useAccount, usePublicClient } from "wagmi";
 // Contract Config
 import { lotteryAddress, lotteryAbi } from "../../lib/ContractConfig";
 
+import axios from "axios";
+import { set } from "mongoose";
+
+
 export default function BuyTicketpop({ onClose }) {
   // 1. Get buyTicket and notify from context (contracts removed)
-  const { buyTicket, notify ,approveUSDC} = useWeb3();
+  const { buyTicket, notify ,approveUSDC, getLotteryInfo} = useWeb3();
 
   const { address: wagmiAddress, isConnected} = useAccount();
   const { openConnectModal } = useConnectModal();
@@ -23,7 +27,7 @@ export default function BuyTicketpop({ onClose }) {
 
   // Form + UI state
   const [amount, setAmount] = useState("");
-  const [pricePerTicket, setPricePerTicket] = useState(0);
+  const [TicketsPrice, setTicketsPrice] = useState(0);
   const [maxTicketPerUser, setMaxTicketPerUser] = useState(0);
   const [maxTickets, setMaxTickets] = useState(0);
   const [totalSold, setTotalSold] = useState(0);
@@ -36,69 +40,39 @@ export default function BuyTicketpop({ onClose }) {
   const remainingTickets = maxTickets - totalSold;
   const remainingForUser = Math.max(maxTicketPerUser - userTicketsBought, 0);
   const allowedToBuy = Math.min(remainingTickets, remainingForUser);
-
-  const total = pricePerTicket * (Number(amount) || 0);
+  //  const TicketPrice=formatUnits(TicketsPrice,6);
+  const total = TicketsPrice* (Number(amount) || 0);
 
   // -----------------------------------------------------------
   // LOAD LOTTERY DATA (Using PublicClient directly)
   // -----------------------------------------------------------
-  useEffect(() => {
-    const load = async () => {
-      if (!publicClient) return;
 
-      try {
-        // Prepare calls
-        const baseCalls = [
-          { address: lotteryAddress, abi: lotteryAbi, functionName: "ticketPrice" },
-          { address: lotteryAddress, abi: lotteryAbi, functionName: "maxTicketsPerUser" },
-          { address: lotteryAddress, abi: lotteryAbi, functionName: "maxTickets" },
-          { address: lotteryAddress, abi: lotteryAbi, functionName: "getTotalTicketsSold" },
-        ];
 
-        // Add user specific call if connected
-        if (wagmiAddress) {
-          baseCalls.push({
-            address: lotteryAddress,
-            abi: lotteryAbi,
-            functionName: "getTicketsByHolder",
-            args: [wagmiAddress],
-          });
-        }
 
-        // Execute Multicall
-        const results = await publicClient.multicall({
-          contracts: baseCalls,
-          allowFailure: false,
-        });
 
-        // 🛡️ SAFETY CHECK: Ensure results exist before accessing index [0]
-        if (!results || results.length === 0) {
-          console.warn("Multicall returned no data");
-          return;
-        }
+useEffect(() => {
+  const loadInfo = async () => {
+    console.log("wallet",wagmiAddress)
+    const wallet =
+      wagmiAddress || "0x0000000000000000000000000000000000000000";
 
-        // Destructure results (BigInts)
-        const priceWei = results[0];
-        const maxUser = results[1];
-        const maxT = results[2];
-        const sold = results[3];
-        // Fix: Use BigInt(0) instead of 0n literal for better target compatibility
-        const bought = wagmiAddress && results[4] ? results[4] : BigInt(0); 
+    const info = await getLotteryInfo(wallet);
+    if (!info) return;
 
-        // Update State
-        setPricePerTicket(Number(formatUnits(priceWei, 6)));
-        setMaxTicketPerUser(Number(maxUser));
-        setMaxTickets(Number(maxT));
-        setTotalSold(Number(sold));
-        setUserTicketsBought(Number(bought));
+    setTicketsPrice(info.ticketPrice);
+    
+    setMaxTicketPerUser(info.maxTicketsPerUser);
+    setMaxTickets(info.maxTickets);
+    setTotalSold(info.totalTicketsSold);
+    setUserTicketsBought(info.userTickets || 0);
+    // console.log("Lottery info loaded:", info);
+    // console.log("User tickets bought:", info.userTickets);
+    // console.log("User tickets bought:", info.ticketPrice);
 
-      } catch (e) {
-        console.error("Price fetch error:", e);
-      }
-    };
+  };
 
-    load();
-  }, [publicClient, wagmiAddress]);
+  loadInfo();
+}, [wagmiAddress]);
 
   // -----------------------------------------------------------
   // BUY
@@ -118,13 +92,14 @@ export default function BuyTicketpop({ onClose }) {
       notify("⚠ Invalid ticket amount.");
       return;
     }
+    if(qty>maxTickets ) return notify("⚠ Exceeds max tickets.");
 
     // Enable loading BEFORE approval
     setLoading(true);
    
-    // notify(`⏳ Please Approve ${qty * pricePerTicket} USDC`);
+    // notify(`⏳ Please Approve ${qty * TicketsPrice} USDC`);
 
-    const usdcNeeded = qty * pricePerTicket;
+    const usdcNeeded = qty * TicketsPrice;
     const approval = await approveUSDC(usdcNeeded);
 
     if (!approval.success) {
@@ -154,9 +129,6 @@ export default function BuyTicketpop({ onClose }) {
 };
 
 
-  // -----------------------------------------------------------
-  // UI (Unchanged)
-  // -----------------------------------------------------------
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-50">
       <div

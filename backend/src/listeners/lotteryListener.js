@@ -6,6 +6,7 @@ import Winner from "../models/Winner.js";
 import Round from "../models/Round.js";
 import ServiceLotteryABI from "../abis/ServiceLottery.js";
 import ServiceNFTABI from "../abis/ServiceNFT.js";
+ import { formatUnits } from "viem";
 
 
 
@@ -48,28 +49,44 @@ export const getCurrentRoundId = async () => {
   return Number(round);
 };
 
-export const lotteryInfo = async () => {
+
+
+export const lotteryInfo = async (wallet) => {
   try {
-    // Read values directly from contract
-    const currentRoundId = Number(await contract.currentRoundId());
-    const ticketPrice = Number(await contract.ticketPrice());
-    const maxTickets = Number(await contract.maxTickets());
-    const maxTicketsPerUser = Number(await contract.maxTicketsPerUser());
+    const userWallet =
+      wallet?.toLowerCase() ||
+      "0x0000000000000000000000000000000000000000";
 
-    // getTotalTicketsSold(currentRoundId)
-    const totalTicketsSold = Number(
-      await contract.getTotalTicketsSold()
-    );
-    // console.log("🎫 Total Tickets Sold for round", currentRoundId, ":", totalTicketsSold);
-    const msaURI = await contract.getMsaURI(); 
-
-    return {
+    // Fetch in parallel
+    const [
       currentRoundId,
-      ticketPrice,
+      ticketPriceRaw,
       maxTickets,
       maxTicketsPerUser,
       totalTicketsSold,
-      msaURI, 
+      msaURI,
+      userTickets
+    ] = await Promise.all([
+      contract.currentRoundId(),
+      contract.ticketPrice(),
+      contract.maxTickets(),
+      contract.maxTicketsPerUser(),
+      contract.getTotalTicketsSold(),
+      contract.getMsaURI(),
+      contract.getTicketsByHolder(userWallet),
+    ]);
+
+    // Convert ticketPrice to readable USDC string
+    const ticketPrice = formatUnits(ticketPriceRaw, 6); // e.g. "1.00"
+
+    return {
+      currentRoundId: Number(currentRoundId),
+      ticketPrice, // <-- STRING  "1.00"
+      maxTickets: Number(maxTickets),
+      maxTicketsPerUser: Number(maxTicketsPerUser),
+      totalTicketsSold: Number(totalTicketsSold),
+      msaURI,
+      userTickets: Number(userTickets),
     };
 
   } catch (error) {
@@ -77,6 +94,8 @@ export const lotteryInfo = async () => {
     throw error;
   }
 };
+
+
 
 
 // ------------------------------
@@ -103,6 +122,8 @@ export const lotteryInfo = async () => {
 // ------------------------------
 // EVENT 2: WINNER DRAWN
 // ------------------------------
+
+
 contract.on("WinnerDrawn", async (roundId, winnerAddress, tokenId) => {
   try {
     console.log("🏆 WinnerDrawn event received");
